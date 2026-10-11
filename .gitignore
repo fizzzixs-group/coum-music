@@ -1,0 +1,17 @@
+# Сборка
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+
+# Исследования и временные файлы
+.research/
+.tools/
+
+# Редакторы / ОС
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log

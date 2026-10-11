@@ -1,0 +1,83 @@
+/** Тонкая обёртка над Tauri IPC. Все сетевые вызовы живут в Rust. */
+
+import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import type {
+  Account,
+  Lyrics,
+  Playlist,
+  PlaylistDetail,
+  SearchResult,
+  StreamInfo,
+  Track,
+  WaveBatch,
+} from "./types";
+
+export const api = {
+  account: () => invoke<Account | null>("account"),
+  login: () => invoke<void>("login"),
+  loginWithToken: (token: string) => invoke<Account>("login_with_token", { token }),
+  logout: () => invoke<void>("logout"),
+
+  playlists: () => invoke<Playlist[]>("playlists"),
+  playlist: (uid: number, kind: number) => invoke<PlaylistDetail>("playlist", { uid, kind }),
+
+  search: (query: string, page = 0) => invoke<SearchResult>("search", { query, page }),
+
+  liked: () => invoke<Track[]>("liked"),
+  artistTracks: (artistId: string, page = 0) =>
+    invoke<Track[]>("artist_tracks", { artistId, page }),
+  setLike: (trackId: string, like: boolean) => invoke<void>("set_like", { trackId, like }),
+
+  wave: (station?: string, queue?: string) =>
+    invoke<WaveBatch>("wave", { station: station ?? null, queue: queue ?? null }),
+  waveFeedback: (
+    station: string,
+    kind: "trackStarted" | "trackFinished" | "skip",
+    trackId: string,
+    batchId?: string | null,
+    playedSeconds?: number,
+  ) =>
+    invoke<void>("wave_feedback", {
+      station,
+      kind,
+      trackId,
+      batchId: batchId ?? null,
+      playedSeconds: playedSeconds ?? null,
+    }),
+
+  stream: (trackId: string) => invoke<StreamInfo>("stream", { trackId }),
+
+  lyrics: (track: Track) =>
+    invoke<Lyrics | null>("lyrics", {
+      trackId: track.id,
+      title: track.title,
+      artist: track.artists,
+      album: track.album,
+      duration: track.durationMs / 1000,
+    }),
+
+  /** Открывает ссылку в системном браузере (Telegram и т.п.). */
+  openExternal: (url: string) => invoke<void>("open_external", { url }),
+
+  /** Фон приложения: копируем выбранный файл в настройки и отдаём его прокси. */
+  wallpaper: () => invoke<string | null>("wallpaper"),
+  setWallpaper: (path: string) => invoke<string>("set_wallpaper", { path }),
+  clearWallpaper: () => invoke<void>("clear_wallpaper"),
+};
+
+export const events = {
+  onAuthSuccess: (cb: (account: Account) => void): Promise<UnlistenFn> =>
+    listen<Account>("auth://success", (e) => cb(e.payload)),
+  onAuthError: (cb: (message: string) => void): Promise<UnlistenFn> =>
+    listen<string>("auth://error", (e) => cb(e.payload)),
+};
+
+/** Приводит любую ошибку IPC к человекочитаемой строке. */
+export function humanError(e: unknown): string {
+  const raw = typeof e === "string" ? e : e instanceof Error ? e.message : String(e);
+  if (/unauthorized|токен не принят/i.test(raw)) return "Сессия истекла — войди заново";
+  if (/network|сеть|dns|connect/i.test(raw)) return "Нет связи с Яндекс.Музыкой";
+  if (/TrackUnavailable|недоступен/i.test(raw)) return "Этот трек недоступен для воспроизведения";
+  return raw;
+}

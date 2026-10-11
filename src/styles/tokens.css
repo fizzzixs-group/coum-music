@@ -1,0 +1,135 @@
+/* ── Coum Music: дизайн-токены в духе Material 3 (Material You) ────────
+   Тема задаёт всего четыре значения: акцент, цвет текста на акценте,
+   базовую поверхность и основной цвет текста. Все остальные роли
+   (surface-container, outline, ...) выводятся из них через color-mix —
+   поэтому добавить новую тему = добавить один блок из четырёх строк. */
+
+:root {
+  /* Роли, которые переопределяет тема */
+  --primary: #a8c7fa;
+  --on-primary: #06305f;
+  --base: #101014;
+  --on-base: #e3e2e6;
+
+  /* Производные роли M3 */
+  --primary-container: color-mix(in oklab, var(--primary) 22%, var(--base));
+  --on-primary-container: color-mix(in oklab, var(--primary) 26%, var(--on-base));
+  --primary-hover: color-mix(in oklab, var(--primary) 88%, var(--on-base));
+
+  --surface: var(--base);
+  --surface-1: color-mix(in oklab, var(--on-base) 5%, var(--base));
+  --surface-2: color-mix(in oklab, var(--on-base) 8%, var(--base));
+  --surface-3: color-mix(in oklab, var(--on-base) 11%, var(--base));
+  --surface-4: color-mix(in oklab, var(--on-base) 15%, var(--base));
+
+  --on-surface: var(--on-base);
+  --on-surface-variant: color-mix(in oklab, var(--on-base) 66%, var(--base));
+  --on-surface-faint: color-mix(in oklab, var(--on-base) 42%, var(--base));
+
+  --outline: color-mix(in oklab, var(--on-base) 28%, var(--base));
+  --outline-variant: color-mix(in oklab, var(--on-base) 13%, var(--base));
+
+  --error: #ffb4ab;
+  --error-container: color-mix(in oklab, #ff5449 26%, var(--base));
+
+  --scrim: color-mix(in oklab, #000 55%, transparent);
+
+  /* Формы (M3 shape scale) */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-2xl: 36px;
+  --r-full: 999px;
+
+  /* Тени: в M3 elevation тональная, поэтому тени мягкие и редкие */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --elev-2: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --elev-3: 0 8px 24px rgba(0, 0, 0, 0.34);
+  --art-shadow: 0 12px 32px -14px rgba(0, 0, 0, 0.75);
+
+  /* Размеры каркаса */
+  --titlebar-h: 64px;
+  --player-h: 92px;
+  --drawer-w: 268px;
+
+  /* Движение: M3 emphasized */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --ease-soft: cubic-bezier(0.05, 0.7, 0.1, 1);
+}
+
+/* ── Темы ───────────────────────────────────────────────────────────── */
+
+[data-theme="mint"] {
+  --primary: #5cd6b0;
+  --on-primary: #00382a;
+  --base: #0c1211;
+  --on-base: #dfe4e1;
+}
+[data-theme="green"] {
+  --primary: #3ddc84;
+  --on-primary: #00391d;
+  --base: #0c120e;
+  --on-base: #dfe4e0;
+}
+[data-theme="salad"] {
+  --primary: #c3e84a;
+  --on-primary: #263500;
+  --base: #11130c;
+  --on-base: #e4e4dc;
+}
+[data-theme="blue"] {
+  --primary: #5b8dff;
+  --on-primary: #00214f;
+  --base: #0e1116;
+  --on-base: #e1e2e8;
+}
+[data-theme="cyan"] {
+  --primary: #4dd0e1;
+  --on-primary: #003640;
+  --base: #0b1214;
+  --on-base: #dee3e5;
+}
+[data-theme="violet"] {
+  --primary: #b79cff;
+  --on-primary: #2c0d75;
+  --base: #121016;
+  --on-base: #e5e1ea;
+}
+[data-theme="pink"] {
+  --primary: #ff8fc0;
+  --on-primary: #5c0033;
+  --base: #150f12;
+  --on-base: #eae0e4;
+}
+[data-theme="dark"] {
+  --primary: #a8c7fa;
+  --on-primary: #06305f;
+  --base: #101014;
+  --on-base: #e3e2e6;
+}
+[data-theme="black"] {
+  --primary: #e6e6e9;
+  --on-primary: #1a1a1c;
+  --base: #000000;
+  --on-base: #eeeef0;
+}
+[data-theme="darkgray"] {
+  --primary: #a9c7ff;
+  --on-primary: #12305e;
+  --base: #1c1c20;
+  --on-base: #e6e5ea;
+}
+[data-theme="gray"] {
+  --primary: #cfd8ff;
+  --on-primary: #28304d;
+  --base: #2b2b31;
+  --on-base: #f0eff5;
+}
+[data-theme="light"] {
+  --primary: #415f91;
+  --on-primary: #ffffff;
+  --base: #f8f8fc;
+  --on-base: #1a1b20;
+}
