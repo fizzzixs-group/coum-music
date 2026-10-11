@@ -261,7 +261,9 @@ async function main() {
       console.log(`  пропускаю (нет файла): ${file}`);
       continue;
     }
-    const name = file.split(/[\\/]/).pop();
+    const raw = file.split(/[\\/]/).pop();
+    // GitHub заменяет пробелы в имени ассета на точки — делаем имя аккуратным сами.
+    const name = raw.replace(/\s+/g, "-");
 
     // Если ассет с таким именем уже есть — удаляем, чтобы перезалить.
     const existing = (release.assets ?? []).find((a) => a.name === name);
