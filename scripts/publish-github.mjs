@@ -297,6 +297,33 @@ async function main() {
     }
   }
 
+  // 5. Контрольные суммы — чтобы скачавший мог убедиться, что файл не подменили.
+  const { createHash } = await import("node:crypto");
+  const sums = assets.map((file) => {
+    const hash = createHash("sha256").update(readFileSync(file)).digest("hex");
+    const name = file.split(/[\\/]/).pop().replace(/\s+/g, "-");
+    return `${hash}  ${name}`;
+  });
+  const sumsBody = `Контрольные суммы SHA-256 для Coum Music ${VERSION}\n\n${sums.join("\n")}\n\nПроверить: certutil -hashfile "<файл>" SHA256\n`;
+  const sumsName = "SHA256SUMS.txt";
+  const oldSums = (release.assets ?? []).find((a) => a.name === sumsName);
+  if (oldSums) {
+    await api(`/repos/${owner}/${REPO}/releases/assets/${oldSums.id}`, { method: "DELETE" });
+  }
+  const sumsRes = await fetch(
+    `${UPLOADS}/repos/${owner}/${REPO}/releases/${release.id}/assets?name=${sumsName}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token()}`,
+        "Content-Type": "text/plain; charset=utf-8",
+        "User-Agent": "coum-music-publisher",
+      },
+      body: sumsBody,
+    },
+  );
+  console.log(sumsRes.ok ? `  загружено: ${sumsName}` : `  ${sumsName} не залился: ${sumsRes.status}`);
+
   console.log(`\nГотово: https://github.com/${owner}/${REPO}`);
 }
 
