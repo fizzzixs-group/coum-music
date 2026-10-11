@@ -254,16 +254,22 @@ async function main() {
     join(ROOT, "releases", `CoumMusic-${VERSION}-win-x64.zip`),
     join(ROOT, "releases", `v${VERSION}`, `Coum Music_${VERSION}_x64-setup.exe`),
     join(ROOT, "releases", `v${VERSION}`, "coum-music.exe"),
-  ];
+  ].filter((f) => existsSync(f));
+
+  // Имена, которые должны остаться в релизе (пробелы GitHub заменяет на точки).
+  const wanted = assets.map((f) =>
+    f.split(/[\\/]/).pop().replace(/\s+/g, "-"),
+  );
+
+  // Убираем всё лишнее — например, ассеты от прошлых запусков с другим именем.
+  for (const asset of release.assets ?? []) {
+    if (wanted.includes(asset.name)) continue;
+    await api(`/repos/${owner}/${REPO}/releases/assets/${asset.id}`, { method: "DELETE" });
+    console.log(`  удалён старый ассет: ${asset.name}`);
+  }
 
   for (const file of assets) {
-    if (!existsSync(file)) {
-      console.log(`  пропускаю (нет файла): ${file}`);
-      continue;
-    }
-    const raw = file.split(/[\\/]/).pop();
-    // GitHub заменяет пробелы в имени ассета на точки — делаем имя аккуратным сами.
-    const name = raw.replace(/\s+/g, "-");
+    const name = file.split(/[\\/]/).pop().replace(/\s+/g, "-");
 
     // Если ассет с таким именем уже есть — удаляем, чтобы перезалить.
     const existing = (release.assets ?? []).find((a) => a.name === name);
