@@ -1,5 +1,6 @@
 //! Команды, которые вызывает фронтенд (IPC).
 
+use serde::Serialize;
 use tauri::{AppHandle, Manager, State};
 
 use crate::state::AppState;
@@ -236,6 +237,133 @@ pub async fn wallpaper(app: AppHandle) -> Result<Option<String>, String> {
     Ok(crate::stream_proxy::wallpaper_file(&app).map(|p| p.to_string_lossy().to_string()))
 }
 
+// ─────────────────────────── Плейлисты: создание ───────────────────────────
+
+/// Создаёт плейлист в аккаунте пользователя.
+#[tauri::command]
+pub async fn create_playlist(
+    state: State<'_, AppState>,
+    title: String,
+    private: bool,
+) -> Result<PlaylistDto, String> {
+    let title = title.trim().to_string();
+    if title.is_empty() {
+        return Err("Название не может быть пустым".into());
+    }
+    if title.chars().count() > 100 {
+        return Err("Слишком длинное название".into());
+    }
+
+    let client = state.require().await?;
+    client
+        .create_playlist(&title, private)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Кладёт трек в плейлист.
+#[tauri::command]
+pub async fn playlist_add_track(
+    state: State<'_, AppState>,
+    kind: i64,
+    track_id: String,
+    album_id: Option<String>,
+) -> Result<(), String> {
+    let client = state.require().await?;
+    client
+        .playlist_add_track(kind, &track_id, album_id.as_deref())
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// ─────────────────────────── Обновления ───────────────────────────
+
+/// Откуда узнаём о новых версиях.
+const RELEASES_API: &str = "https://api.github.com/repos/fizzzixs-group/coum-music/releases/latest";
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateInfo {
+    /// Версия установленного приложения.
+    pub current: String,
+    /// Версия последнего релиза на GitHub.
+    pub latest: String,
+    pub has_update: bool,
+    /// Список изменений из описания релиза.
+    pub notes: String,
+    /// Ссылка на страницу релиза.
+    pub url: String,
+    pub published_at: String,
+}
+
+/// Сравниваем версии по числам: «0.10.0» новее «0.9.0».
+fn version_parts(v: &str) -> Vec<u32> {
+    v.trim_start_matches('v')
+        .split(['.', '-', '+'])
+        .map(|p| p.parse::<u32>().unwrap_or(0))
+        .collect()
+}
+
+fn is_newer(latest: &str, current: &str) -> bool {
+    let (a, b) = (version_parts(latest), version_parts(current));
+    for i in 0..a.len().max(b.len()) {
+        let (x, y) = (a.get(i).copied().unwrap_or(0), b.get(i).copied().unwrap_or(0));
+        if x != y {
+            return x > y;
+        }
+    }
+    false
+}
+
+/// Спрашивает у GitHub последний релиз и говорит, стоит ли обновляться.
+#[tauri::command]
+pub async fn check_update() -> Result<UpdateInfo, String> {
+    let current = env!("CARGO_PKG_VERSION").to_string();
+
+    let http = reqwest::Client::builder()
+        .user_agent("Coum-Music")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let res = http
+        .get(RELEASES_API)
+        .header("Accept", "application/vnd.github+json")
+        .send()
+        .await
+        .map_err(|e| format!("Не удалось связаться с GitHub: {e}"))?;
+
+    let status = res.status();
+    let text = res.text().await.map_err(|e| e.to_string())?;
+
+    if status == reqwest::StatusCode::NOT_FOUND {
+        return Err("Релизов пока нет".into());
+    }
+    if !status.is_success() {
+        return Err(format!("GitHub ответил {status}"));
+    }
+
+    let json: serde_json::Value =
+        serde_json::from_str(&text).map_err(|e| format!("Непонятный ответ GitHub: {e}"))?;
+
+    let latest = json["tag_name"].as_str().unwrap_or("").to_string();
+    let url = json["html_url"].as_str().unwrap_or("").to_string();
+    let notes = json["body"].as_str().unwrap_or("").to_string();
+    let published_at = json["published_at"].as_str().unwrap_or("").to_string();
+
+    if latest.is_empty() {
+        return Err("В релизе не указана версия".into());
+    }
+
+    Ok(UpdateInfo {
+        has_update: is_newer(&latest, &current),
+        current,
+        latest,
+        notes,
+        url,
+        published_at,
+    })
+}
+
 /// Открывает ссылку в системном браузере (для ссылки на наш Telegram).
 #[tauri::command]
 pub async fn open_external(url: String) -> Result<(), String> {
@@ -280,10 +408,11 @@ pub async fn stream(
     let client = state.require().await?;
     let info = client.stream_url(&track_id).await.map_err(err)?;
 
-    // В реестр кладём именно id трека: прокси сам резолвит подписанный адрес
-    // и перезапрашивает его, когда ссылка протухает.
+    // В реестр кладём id трека вместе с уже полученным адресом: прокси
+    // возьмёт его как есть и не будет резолвить второй раз (иначе Яндекс
+    // отвечает 429 Concurrency limit exceeded).
     let registry = app.state::<crate::stream_proxy::StreamRegistry>();
-    let id = registry.register(track_id);
+    let id = registry.register(track_id, info.url);
 
     Ok(StreamDto {
         url: crate::stream_proxy::local_url(id),

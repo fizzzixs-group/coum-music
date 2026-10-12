@@ -74,6 +74,8 @@ pub struct PlaylistDto {
     pub track_count: u32,
     pub owner_name: String,
     pub is_mine: bool,
+    /// Служебный плейлист Яндекса («Плейлист дня», «Дежавю») — их не показываем.
+    pub generated: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -231,6 +233,12 @@ pub struct RawPlaylist {
     pub og_image: Option<String>,
     #[serde(default)]
     pub track_count: u32,
+    /// Номер правки: нужен, чтобы менять состав плейлиста.
+    #[serde(default)]
+    pub revision: Option<u64>,
+    /// Заполнено у служебных подборок Яндекса.
+    #[serde(default)]
+    pub generated_playlist_type: Option<String>,
     #[serde(default)]
     pub owner: Option<RawOwner>,
     #[serde(default)]
@@ -327,6 +335,31 @@ pub struct RawLikesLibrary {
     pub library: Option<RawLikesTracks>,
     #[serde(default)]
     pub tracks: Vec<RawTrackShort>,
+}
+
+/// Ответ `/get-file-info`: готовый адрес потока, без похода за XML.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RawFileInfo {
+    #[serde(default)]
+    pub download_info: Option<RawFileUrl>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RawFileUrl {
+    #[serde(default)]
+    pub codec: String,
+    #[serde(default)]
+    pub bitrate: u32,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    #[allow(dead_code)]
+    pub urls: Vec<String>,
+    #[serde(default)]
+    #[allow(dead_code)]
+    pub transport: String,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -462,6 +495,7 @@ impl RawPlaylist {
             track_count: self.track_count,
             owner_name,
             is_mine: my_uid.map(|u| u == uid).unwrap_or(false),
+            generated: self.generated_playlist_type.is_some(),
         }
     }
 }

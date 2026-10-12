@@ -25,6 +25,15 @@ export default function App() {
   const error = usePlayer((s) => s.error);
   const setError = usePlayer((s) => s.setError);
   const track = usePlayer(currentTrack);
+  const notice = usePlayer((s) => s.notice);
+  const setNotice = usePlayer((s) => s.setNotice);
+
+  // Мягкое уведомление само исчезает — оно не должно мешать слушать.
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 4000);
+    return () => clearTimeout(timer);
+  }, [notice, setNotice]);
 
   useEffect(() => {
     void init();
@@ -114,6 +123,7 @@ export default function App() {
             </div>
           )}
           {renderView()}
+          {notice && <div className="toast">{notice}</div>}
         </main>
       </div>
       {/* На «Моей волне» нижний плеер не нужен: там своё управление. */}

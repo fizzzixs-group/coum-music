@@ -1,8 +1,11 @@
+import { useState } from "react";
+
 import type { Track } from "@/api/types";
 import { useLibrary } from "@/store/library";
 import { usePlayer } from "@/store/player";
-import { IconHeart, IconPlay, IconQueue, IconWave } from "./Icons";
+import { IconHeart, IconPlay, IconPlus, IconQueue, IconWave } from "./Icons";
 import { Menu, type MenuEntry } from "./Menu";
+import { PlaylistDialog } from "./PlaylistDialog";
 
 type Props = {
   track: Track;
@@ -18,6 +21,7 @@ export function TrackMenu({ track, x, y, onClose }: Props) {
   const enqueue = usePlayer((s) => s.enqueue);
   const liked = useLibrary((s) => s.likedIds.has(track.id));
   const toggleLike = useLibrary((s) => s.toggleLike);
+  const [picker, setPicker] = useState(false);
 
   const entries: MenuEntry[] = [
     {
@@ -40,6 +44,12 @@ export function TrackMenu({ track, x, y, onClose }: Props) {
       icon: <IconQueue size={18} />,
       onSelect: () => enqueue(track),
     },
+    {
+      id: "playlist",
+      title: "Добавить в плейлист",
+      icon: <IconPlus size={18} />,
+      onSelect: () => setPicker(true),
+    },
     "sep",
     {
       id: "like",
@@ -50,5 +60,10 @@ export function TrackMenu({ track, x, y, onClose }: Props) {
     },
   ];
 
-  return <Menu x={x} y={y} entries={entries} onClose={onClose} />;
+  return (
+    <>
+      {!picker && <Menu x={x} y={y} entries={entries} onClose={onClose} />}
+      {picker && <PlaylistDialog track={track} onClose={onClose} />}
+    </>
+  );
 }

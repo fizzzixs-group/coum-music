@@ -1,5 +1,4 @@
 import { useNav } from "@/store/nav";
-import { usePlayer } from "@/store/player";
 import { IconHeart, IconNote, IconSettings, IconWave } from "./Icons";
 
 /**
@@ -9,7 +8,6 @@ import { IconHeart, IconNote, IconSettings, IconWave } from "./Icons";
 export function Sidebar() {
   const route = useNav((s) => s.route);
   const go = useNav((s) => s.go);
-  const startWave = usePlayer((s) => s.startWave);
 
   const items = [
     {
@@ -17,13 +15,9 @@ export function Sidebar() {
       label: "Моя волна",
       icon: <IconWave size={20} />,
       active: route.name === "wave",
-      onClick: () => {
-        go({ name: "wave" });
-        // Станцию запускаем только если её ещё нет: иначе возврат из другого
-        // раздела каждый раз начинал бы волну заново.
-        const player = usePlayer.getState();
-        if (player.source?.kind !== "wave" || player.queue.length === 0) void startWave();
-      },
+      // Просто открываем экран плеера. Волну включают кнопкой на нём:
+      // иначе переход сюда сбивал бы воспроизведение плейлиста.
+      onClick: () => go({ name: "wave" }),
     },
     {
       id: "playlists",

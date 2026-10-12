@@ -59,31 +59,28 @@ pub struct StreamRegistry {
 }
 
 impl StreamRegistry {
-    pub fn register(&self, track_id: String) -> u64 {
+    /// Регистрирует трек вместе с уже полученным адресом.
+    ///
+    /// Адрес передаём сюда сразу: раньше команда `stream` резолвила ссылку,
+    /// чтобы узнать кодек, а прокси резолвил её второй раз — из-за этого
+    /// на каждый трек уходило вдвое больше запросов, и Яндекс отвечал
+    /// `429 Concurrency limit exceeded`.
+    pub fn register(&self, track_id: String, url: String) -> u64 {
         let id = self.next.fetch_add(1, Ordering::Relaxed) + 1;
+        let now = Instant::now();
+
         let mut map = self.entries.lock().unwrap();
         // Сессия может идти часами: не даём словарю расти бесконечно.
         if map.len() > 128 {
             map.clear();
         }
-        // Если адрес уже известен — подставляем сразу, без похода в API.
-        let cached = self
-            .by_track
-            .lock()
-            .unwrap()
-            .get(&track_id)
-            .filter(|(_, at)| at.elapsed() < URL_TTL)
-            .map(|(url, at)| (url.clone(), *at));
+        map.insert(
+            id,
+            Entry { track_id: track_id.clone(), url: url.clone(), at: now },
+        );
+        drop(map);
 
-        let entry = match cached {
-            Some((url, at)) => Entry { track_id, url, at },
-            None => Entry {
-                track_id,
-                url: String::new(),
-                at: Instant::now() - URL_TTL,
-            },
-        };
-        map.insert(id, entry);
+        self.by_track.lock().unwrap().insert(track_id, (url, now));
         id
     }
 
@@ -317,10 +314,45 @@ async fn serve<R: Runtime>(
         let content_type = pick(reqwest::header::CONTENT_TYPE)
             .filter(|c| c.starts_with("audio/"))
             .unwrap_or_else(|| "audio/mpeg".to_string());
-        let content_range = pick(reqwest::header::CONTENT_RANGE);
+        let upstream_range = pick(reqwest::header::CONTENT_RANGE);
 
-        let bytes = if is_head { Vec::new() } else { res.bytes().await.map_err(|e| e.to_string())?.to_vec() };
-        let len = bytes.len();
+        // Размер всего файла берём из Content-Range вида `bytes 0-99/12345`.
+        let total: Option<u64> = upstream_range
+            .as_deref()
+            .and_then(|r| r.rsplit('/').next())
+            .and_then(|t| t.trim().parse().ok());
+
+        // Читаем тело по кускам, а не целиком: стриминговый CDN Яндекса
+        // регулярно обрывает соединение на середине. Раньше это превращалось
+        // в 502, и воспроизведение умирало. Теперь отдаём то, что успели —
+        // Chromium просто запросит следующий диапазон.
+        let mut body: Vec<u8> = Vec::new();
+        if !is_head {
+            let mut stream = res;
+            loop {
+                match stream.chunk().await {
+                    Ok(Some(chunk)) => body.extend_from_slice(&chunk),
+                    Ok(None) => break,
+                    Err(_) => break,
+                }
+            }
+        }
+
+        // Совсем ничего не пришло — возможно, ссылка протухла: берём свежую
+        // и пробуем ещё раз (один раз, чтобы не зациклиться).
+        if !is_head && body.is_empty() && attempt == 0 {
+            attempt += 1;
+            url = resolve(app, id, &track_id).await?;
+            continue;
+        }
+
+        let len = body.len() as u64;
+        let content_range = match total {
+            Some(total) if start + len <= total => {
+                Some(format!("bytes {start}-{}/{total}", start + len.saturating_sub(1)))
+            }
+            _ => upstream_range,
+        };
 
         let mut builder = Response::builder()
             .status(StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::OK))
@@ -340,7 +372,7 @@ async fn serve<R: Runtime>(
             builder = builder.header(header::CONTENT_LENGTH, len.to_string());
         }
 
-        return builder.body(bytes).map_err(|e| e.to_string());
+        return builder.body(body).map_err(|e| e.to_string());
     }
 }
 

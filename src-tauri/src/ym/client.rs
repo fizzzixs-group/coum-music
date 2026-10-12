@@ -16,8 +16,19 @@ const SIGN_SALT: &str = "XGRlBW9FXlekgbPrRHuSiA";
 /// Строка клиента, которую ждёт API. Без неё часть методов отвечает отказом.
 const MUSIC_CLIENT: &str = "YandexMusicAndroid/24023621";
 
+/// Получение потока через `/get-file-info` — так делает официальный десктопный
+/// клиент. Подпись HMAC привязана именно к этой строке клиента, подменить нельзя.
+const DESKTOP_CLIENT: &str = "YandexMusicDesktopAppWindows/5.95.0";
+const FILE_INFO_KEY: &str = "kzqU4XhfCaY6B6JTHODeq5";
+
 /// Значение поля `from` в фидбеке волны.
 const FEEDBACK_FROM: &str = "YandexMusicDesktopAppWindows";
+
+/// Яндекс ограничивает не скорость, а число одновременных запросов
+/// (`429 Concurrency limit exceeded`). Пропускаем резолв ссылок через этот
+/// семафор, чтобы волна + предзагрузка + прокси не били в API разом.
+static STREAM_GATE: std::sync::LazyLock<tokio::sync::Semaphore> =
+    std::sync::LazyLock::new(|| tokio::sync::Semaphore::new(2));
 
 #[derive(Debug, thiserror::Error)]
 pub enum YmError {
@@ -88,7 +99,42 @@ impl YmClient {
         json_body: Option<serde_json::Value>,
         form_body: Option<Vec<(&'static str, String)>>,
     ) -> Result<T> {
-        let mut req = self.authorized(method, &self.url(path, query));
+        // 429 и 5xx у Яндекса обычно временные — пробуем ещё пару раз.
+        let mut last_error = None;
+
+        for attempt in 0..3u32 {
+            match self
+                .request_once::<T>(&method, path, query, json_body.clone(), form_body.clone())
+                .await
+            {
+                Ok(value) => return Ok(value),
+                Err(e) => {
+                    let retryable = matches!(
+                        &e,
+                        YmError::Api(msg) if msg.contains("429") || msg.contains("Concurrency") || msg.contains("502") || msg.contains("503")
+                    );
+                    if !retryable || attempt == 2 {
+                        return Err(e);
+                    }
+                    last_error = Some(e);
+                    tokio::time::sleep(std::time::Duration::from_millis(600 * (attempt as u64 + 1)))
+                        .await;
+                }
+            }
+        }
+
+        Err(last_error.unwrap_or_else(|| YmError::Api("запрос не удался".into())))
+    }
+
+    async fn request_once<T: DeserializeOwned>(
+        &self,
+        method: &reqwest::Method,
+        path: &str,
+        query: &[(&str, String)],
+        json_body: Option<serde_json::Value>,
+        form_body: Option<Vec<(&'static str, String)>>,
+    ) -> Result<T> {
+        let mut req = self.authorized(method.clone(), &self.url(path, query));
 
         if let Some(b) = json_body {
             req = req.json(&b);
@@ -138,6 +184,43 @@ impl YmClient {
         query: &[(&str, String)],
     ) -> Result<T> {
         self.get(path, query).await
+    }
+
+    /// GET с другим значением `X-Yandex-Music-Client`.
+    /// Нужен для `/get-file-info`: подпись там привязана к строке клиента.
+    async fn get_as<T: DeserializeOwned>(
+        &self,
+        path: &str,
+        query: &[(&str, String)],
+        client: &str,
+    ) -> Result<T> {
+        let res = self
+            .http
+            .request(reqwest::Method::GET, self.url(path, query))
+            .header("Authorization", format!("OAuth {}", self.token))
+            .header("X-Yandex-Music-Client", client)
+            .header("Accept-Language", "ru")
+            .header("Accept", "application/json")
+            .send()
+            .await?;
+
+        let status = res.status();
+        let text = res.text().await?;
+
+        if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+            return Err(YmError::Api(format!("429: {}", truncate(&text))));
+        }
+        if status == reqwest::StatusCode::UNAUTHORIZED {
+            return Err(YmError::Unauthorized);
+        }
+        if !status.is_success() {
+            return Err(YmError::Api(format!("HTTP {status}: {}", truncate(&text))));
+        }
+
+        let value: serde_json::Value =
+            serde_json::from_str(&text).map_err(|e| YmError::Shape(format!("{e}")))?;
+        let result = value.get("result").cloned().unwrap_or(value);
+        serde_json::from_value(result).map_err(|e| YmError::Shape(e.to_string()))
     }
 
     async fn post_json<T: DeserializeOwned>(
@@ -264,8 +347,56 @@ impl YmClient {
         Ok(PlaylistDetailDto { playlist: raw.into_dto(Some(self.uid)), tracks })
     }
 
-    // ─────────────────────────── Лайки ───────────────────────────
+    /// Создаёт новый плейлист и возвращает его же.
+    pub async fn create_playlist(&self, title: &str, private: bool) -> Result<PlaylistDto> {
+        let raw: RawPlaylist = self
+            .post_form(
+                &format!("/users/{}/playlists/create", self.uid),
+                &[],
+                vec![
+                    ("title", title.to_string()),
+                    ("visibility", if private { "private" } else { "public" }.to_string()),
+                ],
+            )
+            .await?;
+        Ok(raw.into_dto(Some(self.uid)))
+    }
 
+    /// Добавляет трек в конец плейлиста.
+    ///
+    /// Яндекс принимает «патч» из операций и номер текущей правки, поэтому
+    /// сначала читаем плейлист: без актуального `revision` сервер откажет.
+    pub async fn playlist_add_track(
+        &self,
+        kind: i64,
+        track_id: &str,
+        album_id: Option<&str>,
+    ) -> Result<()> {
+        let raw: RawPlaylist = self
+            .get(&format!("/users/{}/playlists/{kind}", self.uid), &[])
+            .await?;
+
+        let revision = raw.revision.unwrap_or(1);
+        let at = raw.track_count.max(raw.tracks.len() as u32);
+
+        let mut track = serde_json::json!({ "id": track_id });
+        if let Some(album) = album_id.filter(|a| !a.is_empty()) {
+            track["albumId"] = serde_json::Value::String(album.to_string());
+        }
+
+        let diff = serde_json::json!([{ "op": "insert", "at": at, "tracks": [track] }]).to_string();
+
+        let _: serde_json::Value = self
+            .post_form(
+                &format!("/users/{}/playlists/{kind}/change", self.uid),
+                &[],
+                vec![("diff", diff), ("revision", revision.to_string())],
+            )
+            .await?;
+        Ok(())
+    }
+
+    // ─────────────────────────── Лайки ───────────────────────────
     pub async fn liked_tracks(&self) -> Result<Vec<TrackDto>> {
         let value: RawLikesLibrary = self
             .get(&format!("/users/{}/likes/tracks", self.uid), &[])
@@ -422,13 +553,110 @@ impl YmClient {
 
     /// Возвращает прямую ссылку на mp3 для плеера.
     ///
-    /// Схема: `/tracks/{id}/download-info` → XML (host/path/ts/s) →
-    /// `sign = md5(SALT + path[1:] + s)` → `https://{host}/get-mp3/{sign}/{ts}{path}`.
+    /// Сначала идём современным путём `/get-file-info` — как официальный
+    /// десктопный клиент. Он отдаёт готовый адрес (без XML) и, в отличие от
+    /// `download-info`, не упирается в лимит одновременных запросов.
+    /// Если не вышло — падаем на старый способ через `download-info`.
     pub async fn stream_url(&self, track_id: &str) -> Result<StreamDto> {
+        // Не больше двух одновременных резолвов — иначе ловим 429.
+        let _permit = STREAM_GATE
+            .acquire()
+            .await
+            .map_err(|e| YmError::Api(e.to_string()))?;
+
+        match self.file_info_stream(track_id).await {
+            Ok(dto) => return Ok(dto),
+            // Лимит запросов: старый эндпоинт под тем же лимитом, идти туда смысла нет.
+            Err(YmError::Api(msg)) if msg.contains("429") => {
+                return Err(YmError::Api(
+                    "Яндекс временно ограничил запросы — подожди минуту".into(),
+                ))
+            }
+            Err(_) => {}
+        }
+
+        self.download_info_stream(track_id).await
+    }
+
+    /// Поток через `/get-file-info` (десктопный клиент).
+    async fn file_info_stream(&self, track_id: &str) -> Result<StreamDto> {
+        // Трейт нужен, чтобы у Hmac был new_from_slice.
+        use hmac::Mac as _;
+
+        // В подписи и в запросе участвует только числовой id, без альбома.
+        let numeric = track_id.split(':').next().unwrap_or(track_id).to_string();
+
+        // hq — это mp3 320, если он есть; иначе nq (192).
+        for quality in ["hq", "nq"] {
+            let timestamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+
+            let codecs = "mp3";
+            let transport = "raw";
+            let message = format!("{timestamp}{numeric}{quality}{codecs}{transport}");
+
+            let mut mac = hmac::Hmac::<sha2::Sha256>::new_from_slice(FILE_INFO_KEY.as_bytes())
+                .expect("любая длина ключа допустима");
+            mac.update(message.as_bytes());
+            let sign = {
+                use base64::Engine as _;
+                let full = base64::engine::general_purpose::STANDARD
+                    .encode(mac.finalize().into_bytes());
+                // У get-file-info последний символ base64 отбрасывают.
+                full[..full.len().saturating_sub(1)].to_string()
+            };
+
+            let info: RawFileInfo = match self
+                .get_as(
+                    "/get-file-info",
+                    &[
+                        ("ts", timestamp.to_string()),
+                        ("trackId", numeric.clone()),
+                        ("quality", quality.to_string()),
+                        ("codecs", codecs.to_string()),
+                        ("transports", transport.to_string()),
+                        ("sign", sign),
+                    ],
+                    DESKTOP_CLIENT,
+                )
+                .await
+            {
+                Ok(info) => info,
+                Err(e) => {
+                    if quality == "nq" {
+                        return Err(e);
+                    }
+                    continue;
+                }
+            };
+
+            if let Some(di) = info.download_info {
+                if let Some(url) = di.url.filter(|u| !u.is_empty()) {
+                    return Ok(StreamDto {
+                        url,
+                        codec: di.codec,
+                        bitrate: di.bitrate,
+                    });
+                }
+            }
+        }
+
+        Err(YmError::TrackUnavailable)
+    }
+
+    /// Запасной путь: `download-info` + подпись по соли.
+    async fn download_info_stream(&self, track_id: &str) -> Result<StreamDto> {
         let infos: Vec<RawDownloadInfo> = self
             .get(&format!("/tracks/{track_id}/download-info"), &[])
             .await
-            .map_err(|_| YmError::TrackUnavailable)?;
+            .map_err(|e| match e {
+                YmError::Api(msg) if msg.contains("429") => {
+                    YmError::Api("Яндекс временно ограничил запросы — подожди минуту".into())
+                }
+                other => other,
+            })?;
 
         // Берём только mp3 (aac в неофициальных клиентах не используется) и по убыванию битрейта.
         let mut candidates: Vec<&RawDownloadInfo> = infos

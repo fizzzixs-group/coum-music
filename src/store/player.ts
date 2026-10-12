@@ -12,8 +12,18 @@ import { useLibrary } from "./library";
 const REFILL_THRESHOLD = 4;
 /** Подписанные ссылки живут ограниченное время — держим их в кэше недолго. */
 const STREAM_TTL_MS = 20 * 60 * 1000;
+/** Сколько треков подряд можно молча пропустить, если они не играются. */
+const MAX_AUTO_SKIP = 3;
 
 const streamCache = new Map<string, { url: string; at: number }>();
+
+/** Счётчик автопропусков: сбрасывается, как только трек заиграл. */
+let autoSkips = 0;
+
+/** Трек не отдаётся: истёк, недоступен в регионе, лимит запросов и т.п. */
+function looksUnavailable(message: string): boolean {
+  return /недоступ|Concurrency|429|CDN ответил|сеть недоступна|502|503/i.test(message);
+}
 
 type SeedContinuation = { station: string; label: string };
 
@@ -32,6 +42,8 @@ type PlayerState = {
   volume: number;
   muted: boolean;
   error: string | null;
+  /** Мягкое уведомление — например «трек недоступен, пропускаю». */
+  notice: string | null;
   streamCodec: string | null;
 
   playTracks: (tracks: Track[], startIndex: number, source: PlaybackSource | null) => Promise<void>;
@@ -48,6 +60,7 @@ type PlayerState = {
   toggleMute: () => void;
   toggleLike: () => Promise<void>;
   setError: (message: string | null) => void;
+  setNotice: (message: string | null) => void;
 };
 
 /** Обратная связь станции — от неё зависит, что она подберёт дальше. */
@@ -115,6 +128,7 @@ export const usePlayer = create<PlayerState>()((set, get) => ({
   volume: Number(localStorage.getItem("coum.volume") ?? "0.8"),
   muted: localStorage.getItem("coum.muted") === "1",
   error: null,
+  notice: null,
   streamCodec: null,
 
   playTracks: async (tracks, startIndex, source) => {
@@ -206,12 +220,21 @@ export const usePlayer = create<PlayerState>()((set, get) => ({
       const stream = await resolveStream(track);
       set({ streamCodec: stream.codec });
       await engine.playUrl(stream.url);
+      autoSkips = 0;
       set({ loading: false });
 
       const state = get();
-      // Заранее готовим следующий трек: переключение должно быть мгновенным.
+      // Предзагрузку следующего трека запускаем ближе к концу текущего:
+      // у Яндекса узкое окно по частоте запросов, и если готовить трек сразу,
+      // старт и предзагрузка попадают в один интервал — прилетает 429.
       const upcoming = state.queue[index + 1];
-      if (upcoming) void resolveStream(upcoming).catch(() => {});
+      if (upcoming) {
+        const left = Math.max(0, (state.duration || track.durationMs / 1000) - 20);
+        const delay = Math.min(Math.max(left * 1000, 4000), 120_000);
+        setTimeout(() => {
+          void resolveStream(upcoming).catch(() => {});
+        }, delay);
+      }
 
       if (
         state.source?.kind === "wave" &&
@@ -221,7 +244,24 @@ export const usePlayer = create<PlayerState>()((set, get) => ({
         void get().refillWave();
       }
     } catch (e) {
-      set({ loading: false, error: humanError(e), playing: false });
+      const message = humanError(e);
+      const hasNext = index < get().queue.length - 1;
+
+      // Недоступный трек — не повод показывать ошибку: молча идём дальше
+      // и говорим об этом одной строкой.
+      if (looksUnavailable(message) && hasNext && autoSkips < MAX_AUTO_SKIP) {
+        autoSkips++;
+        set({
+          loading: false,
+          error: null,
+          notice: `«${track.title}» не отдаётся — пропускаю`,
+        });
+        void get().playAt(index + 1);
+        return;
+      }
+
+      autoSkips = 0;
+      set({ loading: false, error: message, playing: false });
     }
   },
 
@@ -297,6 +337,8 @@ export const usePlayer = create<PlayerState>()((set, get) => ({
   },
 
   setError: (message) => set({ error: message }),
+
+  setNotice: (message) => set({ notice: message }),
 }));
 
 // Движок общий для плеера, эквалайзера и визуализатора: подписываемся один раз.

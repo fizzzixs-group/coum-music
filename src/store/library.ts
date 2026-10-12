@@ -21,6 +21,8 @@ type LibraryState = {
   loadLiked: () => Promise<void>;
   toggleLike: (track: Track) => Promise<void>;
   isLiked: (trackId: string) => boolean;
+  createPlaylist: (title: string, isPrivate: boolean) => Promise<Playlist>;
+  addToPlaylist: (kind: number, track: Track) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 };
@@ -59,9 +61,10 @@ export const useLibrary = create<LibraryState>()((set, get) => ({
     set({ loadingPlaylists: true });
     try {
       const playlists = await api.playlists();
-      // Служебные плейлисты Яндекса («Плейлист дня» и т.п.) не нужны —
-      // оставляем только то, что человек реально собирал сам.
-      const useful = playlists.filter((p) => p.trackCount > 0);
+      // Служебные подборки Яндекса («Плейлист дня», «Дежавю») не нужны, а вот
+      // пустые свои плейлисты показывать обязательно — иначе только что
+      // созданный просто не появится в списке.
+      const useful = playlists.filter((p) => !p.generated);
       set({ playlists: useful, loadingPlaylists: false });
     } catch (e) {
       set({ loadingPlaylists: false, error: humanError(e) });
@@ -108,6 +111,24 @@ export const useLibrary = create<LibraryState>()((set, get) => ({
   },
 
   isLiked: (trackId) => get().likedIds.has(trackId),
+
+  createPlaylist: async (title, isPrivate) => {
+    const playlist = await api.createPlaylist(title, isPrivate);
+    // Показываем сразу, не дожидаясь повторной выборки списка с сервера.
+    set({ playlists: [playlist, ...get().playlists], error: null });
+    void get().refreshPlaylists();
+    return playlist;
+  },
+
+  addToPlaylist: async (kind, track) => {
+    try {
+      await api.playlistAddTrack(kind, track.id, track.albumId ?? null);
+      void get().refreshPlaylists();
+    } catch (e) {
+      set({ error: humanError(e) });
+      throw e;
+    }
+  },
 
   logout: async () => {
     await api.logout();

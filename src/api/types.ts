@@ -45,6 +45,8 @@ export interface Playlist {
   trackCount: number;
   ownerName: string;
   isMine: boolean;
+  /** Служебная подборка Яндекса — такие в списке не показываем. */
+  generated: boolean;
 }
 
 export interface PlaylistDetail {
@@ -98,8 +100,39 @@ export type PlaybackSource =
   | { kind: "likes" }
   | { kind: "search"; title: string };
 
+/** Ответ проверки обновлений. */
+export interface UpdateInfo {
+  current: string;
+  latest: string;
+  hasUpdate: boolean;
+  /** Список изменений из описания релиза на GitHub. */
+  notes: string;
+  url: string;
+  publishedAt: string;
+}
+
 /** Станция «Моя волна». */
 export const WAVE_STATION = "user:onyourwave";
+
+/** Что за подбор сейчас играет — это показываем в шапке плеера. */
+export function sourceLabel(source: PlaybackSource | null): string {
+  if (!source) return "Ничего не играет";
+  switch (source.kind) {
+    case "wave":
+      return source.label;
+    case "playlist":
+      return `Плейлист · ${source.title}`;
+    case "likes":
+      return "Мне нравится";
+    case "search":
+      return `Поиск · ${source.title}`;
+  }
+}
+
+/** Играет ли сейчас именно станция, а не плейлист, избранное или поиск. */
+export function isWaveSource(source: PlaybackSource | null): boolean {
+  return source?.kind === "wave";
+}
 
 /** Станция «волна по треку»: Яндекс подбирает похожее на конкретный трек. */
 export function trackStation(track: Track): string {

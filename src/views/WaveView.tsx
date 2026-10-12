@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { WAVE_STATION } from "@/api/types";
+import { WAVE_STATION, isWaveSource, sourceLabel } from "@/api/types";
 import { Cover } from "@/components/Cover";
 import {
   IconHeart,
@@ -15,6 +15,7 @@ import {
   IconVolumeMute,
 } from "@/components/Icons";
 import { Menu, type MenuEntry } from "@/components/Menu";
+import { QueuePopover } from "@/components/QueuePopover";
 import { Slider } from "@/components/Slider";
 import { Visualizer } from "@/components/Visualizer";
 import { formatSeconds } from "@/lib/format";
@@ -53,6 +54,7 @@ export function WaveView() {
   const track = queue[index] ?? null;
   const liked = useLibrary((s) => (track ? s.likedIds.has(track.id) : false));
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [queueOpen, setQueueOpen] = useState<{ x: number; y: number } | null>(null);
   const [scrub, setScrub] = useState<number | null>(null);
 
   const duration = realDuration > 0 ? realDuration : (track?.durationMs ?? 0) / 1000;
@@ -77,7 +79,8 @@ export function WaveView() {
     );
   }
 
-  const label = source?.kind === "wave" ? source.label : "Моя волна";
+  const label = sourceLabel(source);
+  const isWave = isWaveSource(source);
   const isSeeded = source?.kind === "wave" && source.station !== WAVE_STATION;
 
   const menuEntries: MenuEntry[] = [
@@ -113,23 +116,41 @@ export function WaveView() {
   return (
     <div className="now">
       <header className="now__header">
-        <span className="now__badge">
+        {/* Плашка с источником: показывает, что играет — волну, плейлист или
+            избранное. По клику открывается очередь в миниатюре. */}
+        <button
+          className="now__badge"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setQueueOpen({ x: rect.left, y: rect.bottom + 8 });
+          }}
+          title="Показать очередь"
+        >
           <IconSparkle size={13} />
           <span>{label}</span>
           {seedContinuation ? <b>· дальше похожее</b> : null}
-        </span>
+        </button>
 
-        {/* Громкость прямо здесь: нижний плеер на этой вкладке скрыт. */}
-        <div className="now__volume">
-          <button className="player__control" aria-label="Звук" onClick={toggleMute}>
-            <VolumeIcon size={19} />
-          </button>
-          <Slider
-            ariaLabel="Громкость"
-            value={muted ? 0 : volume}
-            max={1}
-            onChange={(v) => setVolume(v)}
-          />
+        <div className="now__header-right">
+          {!isWave && (
+            <button className="btn-ghost now__wave-btn" onClick={() => void startWave()}>
+              <IconSparkle size={15} />
+              Включить волну
+            </button>
+          )}
+
+          {/* Громкость прямо здесь: нижний плеер на этой вкладке скрыт. */}
+          <div className="now__volume">
+            <button className="player__control" aria-label="Звук" onClick={toggleMute}>
+              <VolumeIcon size={19} />
+            </button>
+            <Slider
+              ariaLabel="Громкость"
+              value={muted ? 0 : volume}
+              max={1}
+              onChange={(v) => setVolume(v)}
+            />
+          </div>
         </div>
       </header>
 
@@ -214,6 +235,9 @@ export function WaveView() {
       </div>
 
       {menu && <Menu x={menu.x} y={menu.y} entries={menuEntries} onClose={() => setMenu(null)} />}
+      {queueOpen && (
+        <QueuePopover x={queueOpen.x} y={queueOpen.y} onClose={() => setQueueOpen(null)} />
+      )}
     </div>
   );
 }

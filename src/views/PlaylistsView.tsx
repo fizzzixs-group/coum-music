@@ -1,5 +1,8 @@
+import { useState } from "react";
+
 import { Cover } from "@/components/Cover";
-import { IconNote, IconRefresh } from "@/components/Icons";
+import { IconNote, IconPlus, IconRefresh } from "@/components/Icons";
+import { PlaylistDialog } from "@/components/PlaylistDialog";
 import { trackCount } from "@/lib/format";
 import { useLibrary } from "@/store/library";
 import { useNav } from "@/store/nav";
@@ -10,6 +13,7 @@ export function PlaylistsView() {
   const loading = useLibrary((s) => s.loadingPlaylists);
   const refresh = useLibrary((s) => s.refreshPlaylists);
   const go = useNav((s) => s.go);
+  const [creating, setCreating] = useState(false);
 
   return (
     <div className="view scroll">
@@ -19,16 +23,22 @@ export function PlaylistsView() {
           {loading
             ? "Загружаю…"
             : playlists.length > 0
-              ? `${playlists.length} шт. — всё, что ты собрал в Яндекс.Музыке`
+              ? `${playlists.length} шт. — всё, что ты собрал`
               : "Здесь появятся плейлисты из твоего аккаунта"}
         </p>
 
-        {!loading && playlists.length > 0 && (
-          <button className="btn-ghost" onClick={() => void refresh()}>
-            <IconRefresh size={16} />
-            Обновить
+        <div className="view__actions">
+          <button className="btn-primary" onClick={() => setCreating(true)}>
+            <IconPlus size={17} />
+            Создать плейлист
           </button>
-        )}
+          {!loading && playlists.length > 0 && (
+            <button className="btn-ghost" onClick={() => void refresh()}>
+              <IconRefresh size={16} />
+              Обновить
+            </button>
+          )}
+        </div>
 
         {loading && playlists.length === 0 && (
           <div className="card-grid" style={{ marginTop: 24 }}>
@@ -42,7 +52,7 @@ export function PlaylistsView() {
           <div className="empty">
             <IconNote size={22} />
             <div className="empty__title">Пока пусто</div>
-            <p>Создай плейлист в Яндекс.Музыке — он появится здесь.</p>
+            <p>Собери первый плейлист прямо здесь — или создай его в Яндекс.Музыке.</p>
           </div>
         )}
 
@@ -56,12 +66,16 @@ export function PlaylistsView() {
               >
                 <Cover className="card__cover" src={p.cover} seed={`${p.uid}:${p.kind}`} alt="" />
                 <div className="card__title">{p.title}</div>
-                <div className="card__sub">{trackCount(p.trackCount)}</div>
+                <div className="card__sub">
+                  {p.trackCount > 0 ? trackCount(p.trackCount) : "пустой"}
+                </div>
               </button>
             ))}
           </div>
         )}
       </div>
+
+      {creating && <PlaylistDialog onClose={() => setCreating(false)} />}
     </div>
   );
 }

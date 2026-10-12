@@ -10,6 +10,7 @@ import type {
   SearchResult,
   StreamInfo,
   Track,
+  UpdateInfo,
   WaveBatch,
 } from "./types";
 
@@ -64,6 +65,16 @@ export const api = {
   wallpaper: () => invoke<string | null>("wallpaper"),
   setWallpaper: (path: string) => invoke<string>("set_wallpaper", { path }),
   clearWallpaper: () => invoke<void>("clear_wallpaper"),
+
+  /** Проверка новой версии на GitHub. */
+  checkUpdate: () => invoke<UpdateInfo>("check_update"),
+
+  /** Создать свой плейлист прямо в приложении. */
+  createPlaylist: (title: string, isPrivate: boolean) =>
+    invoke<Playlist>("create_playlist", { title, private: isPrivate }),
+  /** Положить трек в плейлист. */
+  playlistAddTrack: (kind: number, trackId: string, albumId: string | null) =>
+    invoke<void>("playlist_add_track", { kind, trackId, albumId }),
 };
 
 export const events = {

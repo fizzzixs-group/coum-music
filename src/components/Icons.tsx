@@ -133,6 +133,12 @@ export const IconNote = ({ size = 16, className }: Props) => (
   </svg>
 );
 
+export const IconPlus = ({ size = 18, className }: Props) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
 export const IconDislike = ({ size = 18, className }: Props) => (
   <svg {...base(size)} className={className}>
     <path d="M7 4h10.5a2 2 0 0 1 1.94 1.5l1.1 4.2a2 2 0 0 1-1.93 2.55H13l.9 4.2A2.2 2.2 0 0 1 11.7 19l-3.2-6.2" />

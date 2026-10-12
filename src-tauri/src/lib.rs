@@ -35,6 +35,9 @@ pub fn run() {
             commands::set_wallpaper,
             commands::clear_wallpaper,
             commands::wallpaper,
+            commands::check_update,
+            commands::create_playlist,
+            commands::playlist_add_track,
         ])
         .run(tauri::generate_context!())
         .expect("не удалось запустить Coum Music");

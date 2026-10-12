@@ -1,4 +1,7 @@
+import { useState } from "react";
+
 import { humanError, api } from "@/api/backend";
+import type { UpdateInfo } from "@/api/types";
 import {
   IconCheck,
   IconExternal,
@@ -34,6 +37,24 @@ export function SettingsView() {
     void api.openExternal(TELEGRAM_URL).catch((e) => {
       useLibrary.setState({ error: humanError(e) });
     });
+  };
+
+  // Проверка обновлений: приложение само ходит на GitHub за последним релизом.
+  const [checking, setChecking] = useState(false);
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  const checkUpdates = async () => {
+    setChecking(true);
+    setUpdateError(null);
+    setUpdate(null);
+    try {
+      setUpdate(await api.checkUpdate());
+    } catch (e) {
+      setUpdateError(humanError(e));
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -204,12 +225,62 @@ export function SettingsView() {
           </h2>
           <div className="settings__row">
             <div className="settings__row-text">
-              <div className="settings__row-title">Coum Music</div>
-              <div className="settings__row-sub">
-                версия {__APP_VERSION__} · неофициальный клиент Яндекс.Музыки
+              <div className="settings__row-title">Coum Music {__APP_VERSION__}</div>
+              <div className="settings__row-sub">неофициальный клиент Яндекс.Музыки</div>
+            </div>
+            <button className="btn-ghost" disabled={checking} onClick={() => void checkUpdates()}>
+              {checking ? "Проверяю…" : "Проверить обновления"}
+            </button>
+          </div>
+
+          {updateError && (
+            <div className="update__state update__state--error">{updateError}</div>
+          )}
+
+          {update && !update.hasUpdate && (
+            <div className="update__state">
+              <IconCheck size={18} />
+              <div>
+                <div className="update__state-title">Установлена последняя версия</div>
+                <div className="update__state-sub">
+                  {update.current} — новее на GitHub ничего нет
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {update?.hasUpdate && (
+            <div className="update__card">
+              <div className="update__card-head">
+                <div>
+                  <div className="update__card-title">
+                    Доступна версия {update.latest.replace(/^v/, "")}
+                  </div>
+                  <div className="update__card-sub">
+                    у тебя {update.current}
+                    {update.publishedAt
+                      ? ` · вышла ${new Date(update.publishedAt).toLocaleDateString("ru-RU")}`
+                      : ""}
+                  </div>
+                </div>
+                <button
+                  className="btn-primary"
+                  onClick={() => void api.openExternal(update.url).catch(() => {})}
+                >
+                  Скачать
+                  <IconExternal size={15} />
+                </button>
+              </div>
+
+              {update.notes.trim() && (
+                <details className="update__notes" open>
+                  <summary>Что изменилось</summary>
+                  <pre className="update__notes-text">{update.notes.trim()}</pre>
+                </details>
+              )}
+            </div>
+          )}
+
           <div className="settings__row">
             <div className="settings__row-text">
               <div className="settings__row-title">Что внутри</div>
