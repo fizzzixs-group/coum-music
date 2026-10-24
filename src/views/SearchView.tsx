@@ -86,11 +86,15 @@ export function SearchView() {
           </h2>
           <div className="card-grid">
             {result.artists.slice(0, 8).map((a) => (
-              <div className="card" key={a.id}>
+              <button
+                className="card"
+                key={a.id}
+                onClick={() => go({ name: "artist", id: a.id, title: a.name })}
+              >
                 <Cover className="card__cover card__cover--round" src={a.cover} seed={a.id} alt="" round />
                 <div className="card__title">{a.name}</div>
                 <div className="card__sub">исполнитель</div>
-              </div>
+              </button>
             ))}
           </div>
         </>

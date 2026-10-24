@@ -29,3 +29,18 @@ export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).slice(0, 2);
   return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "C";
 }
+
+/**
+ * Какую длительность показать.
+ *
+ * Chromium оценивает длительность потока по размеру файла и битрейту, и на
+ * некоторых треках выдаёт чушь вроде «2507:20». Если его оценка сильно
+ * расходится с данными трека — верим метаданным.
+ */
+export function shownDuration(realSeconds: number, durationMs: number): number {
+  const meta = durationMs / 1000;
+  if (realSeconds <= 0) return meta;
+  if (meta <= 0) return realSeconds;
+  const tolerance = Math.max(5, meta * 0.25);
+  return Math.abs(realSeconds - meta) <= tolerance ? realSeconds : meta;
+}

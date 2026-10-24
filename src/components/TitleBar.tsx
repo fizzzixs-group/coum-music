@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import logo from "@/assets/logo.png";
+import { isMobilePlatform } from "@/lib/platform";
 import { useNav } from "@/store/nav";
 import { IconClose, IconMaximize, IconMinimize, IconSearch } from "./Icons";
 
@@ -12,6 +13,8 @@ export function TitleBar() {
   const setQuery = useNav((s) => s.setSearchQuery);
   const go = useNav((s) => s.go);
   const route = useNav((s) => s.route);
+  // На телефоне окно рисует система: свои кнопки и перетаскивание не нужны.
+  const mobile = isMobilePlatform();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -31,7 +34,7 @@ export function TitleBar() {
   const win = getCurrentWindow();
 
   return (
-    <header className="titlebar">
+    <header className="titlebar" data-mobile={mobile}>
       <div className="brand">
         <img className="brand__mark" src={logo} alt="Coum Music" />
         <div className="brand__name">
@@ -44,27 +47,37 @@ export function TitleBar() {
         <input
           ref={inputRef}
           value={query}
-          placeholder="Поиск: треки, исполнители, альбомы"
+          placeholder={mobile ? "Поиск" : "Поиск: треки, исполнители, альбомы"}
           spellCheck={false}
           onChange={(e) => {
             setQuery(e.target.value);
             go({ name: "search" });
           }}
         />
-        {route.name !== "search" && <span className="search-field__hint">Ctrl K</span>}
+        {!mobile && route.name !== "search" && <span className="search-field__hint">Ctrl K</span>}
       </label>
 
-      <div className="window-controls">
-        <button className="win-btn" aria-label="Свернуть" onClick={() => void win.minimize()}>
-          <IconMinimize />
-        </button>
-        <button className="win-btn" aria-label="Развернуть" onClick={() => void win.toggleMaximize()}>
-          <IconMaximize />
-        </button>
-        <button className="win-btn win-btn--close" aria-label="Закрыть" onClick={() => void win.close()}>
-          <IconClose />
-        </button>
-      </div>
+      {!mobile && (
+        <div className="window-controls">
+          <button className="win-btn" aria-label="Свернуть" onClick={() => void win.minimize()}>
+            <IconMinimize />
+          </button>
+          <button
+            className="win-btn"
+            aria-label="Развернуть"
+            onClick={() => void win.toggleMaximize()}
+          >
+            <IconMaximize />
+          </button>
+          <button
+            className="win-btn win-btn--close"
+            aria-label="Закрыть"
+            onClick={() => void win.close()}
+          >
+            <IconClose />
+          </button>
+        </div>
+      )}
     </header>
   );
 }

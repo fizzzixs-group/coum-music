@@ -40,7 +40,16 @@ pub async fn account(app: AppHandle, state: State<'_, AppState>) -> Result<Optio
 /// Открыть окно входа Яндекса.
 #[tauri::command]
 pub async fn login(app: AppHandle) -> Result<(), String> {
-    auth::open_login_window(&app)
+    // На телефоне отдельного окна нет: страницу входа открываем в основном
+    // экране и сами ловим возврат с токеном.
+    #[cfg(mobile)]
+    {
+        return crate::mobile_login::open_login(&app);
+    }
+    #[cfg(desktop)]
+    {
+        auth::open_login_window(&app)
+    }
 }
 
 /// Ручной вход по токену (запасной вариант, если окно входа не сработало).
@@ -57,8 +66,27 @@ pub async fn login_with_token(
     let client = YmClient::new(token.clone(), 0).map_err(err)?;
     let account = client.status().await.map_err(err)?;
     auth::save(&app, &auth::StoredAuth { token, uid: account.uid })?;
+
+    // Кладём клиент в состояние, чтобы следующие команды работали без входа.
     state.set(client.with_uid(account.uid)).await;
     Ok(account)
+}
+
+/// Все треки альбома.
+#[tauri::command]
+pub async fn album_tracks(
+    state: State<'_, AppState>,
+    album_id: String,
+) -> Result<Vec<TrackDto>, String> {
+    let client = state.require().await?;
+    client.album_tracks(&album_id).await.map_err(err)
+}
+
+/// Карточка исполнителя: имя и аватар.
+#[tauri::command]
+pub async fn artist(state: State<'_, AppState>, artist_id: String) -> Result<ArtistDto, String> {
+    let client = state.require().await?;
+    client.artist(&artist_id).await.map_err(err)
 }
 
 #[tauri::command]
@@ -272,6 +300,42 @@ pub async fn playlist_add_track(
     let client = state.require().await?;
     client
         .playlist_add_track(kind, &track_id, album_id.as_deref())
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Переименовывает плейлист.
+#[tauri::command]
+pub async fn playlist_rename(
+    state: State<'_, AppState>,
+    kind: i64,
+    title: String,
+) -> Result<(), String> {
+    let title = title.trim().to_string();
+    if title.is_empty() {
+        return Err("Название не может быть пустым".into());
+    }
+    let client = state.require().await?;
+    client.playlist_rename(kind, &title).await.map_err(err)
+}
+
+/// Удаляет плейлист.
+#[tauri::command]
+pub async fn playlist_delete(state: State<'_, AppState>, kind: i64) -> Result<(), String> {
+    let client = state.require().await?;
+    client.playlist_delete(kind).await.map_err(err)
+}
+
+/// Убирает трек из плейлиста.
+#[tauri::command]
+pub async fn playlist_remove_track(
+    state: State<'_, AppState>,
+    kind: i64,
+    track_id: String,
+) -> Result<(), String> {
+    let client = state.require().await?;
+    client
+        .playlist_remove_track(kind, &track_id)
         .await
         .map_err(|e| e.to_string())
 }

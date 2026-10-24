@@ -6,6 +6,7 @@ import { useLibrary } from "@/store/library";
 import { useNav } from "@/store/nav";
 import { Cover } from "./Cover";
 import { IconHeart, IconMore, IconPause, IconPlay } from "./Icons";
+import type { MenuEntry } from "./Menu";
 import { TrackMenu } from "./TrackMenu";
 
 type Props = {
@@ -14,9 +15,11 @@ type Props = {
   isCurrent: boolean;
   isPlaying: boolean;
   onPlay: () => void;
+  /** Дополнительные пункты меню — задаёт тот, кто рисует список. */
+  menuExtra?: MenuEntry[];
 };
 
-export function TrackRow({ track, index, isCurrent, isPlaying, onPlay }: Props) {
+export function TrackRow({ track, index, isCurrent, isPlaying, onPlay, menuExtra }: Props) {
   const liked = useLibrary((s) => s.likedIds.has(track.id));
   const toggleLike = useLibrary((s) => s.toggleLike);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -118,7 +121,15 @@ export function TrackRow({ track, index, isCurrent, isPlaying, onPlay }: Props) 
         <span className="sr-only">Трек {index + 1}</span>
       </div>
 
-      {menu && <TrackMenu track={track} x={menu.x} y={menu.y} onClose={() => setMenu(null)} />}
+      {menu && (
+        <TrackMenu
+          track={track}
+          x={menu.x}
+          y={menu.y}
+          extra={menuExtra}
+          onClose={() => setMenu(null)}
+        />
+      )}
     </>
   );
 }

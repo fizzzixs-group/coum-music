@@ -327,6 +327,61 @@ impl YmClient {
 
     // ─────────────────────────── Плейлисты ───────────────────────────
 
+    /// Все треки альбома: у альбомов бывает много песен, и их надо
+    /// показывать отдельным экраном.
+    pub async fn album_tracks(&self, album_id: &str) -> Result<Vec<TrackDto>> {
+        let value: serde_json::Value = self
+            .get(&format!("/albums/{album_id}/with-tracks"), &[])
+            .await?;
+
+        let mut list = value
+            .get("tracks")
+            .and_then(|v| v.as_array())
+            .cloned()
+            .unwrap_or_default();
+
+        // У части альбомов треки лежат не в tracks, а в volumes (список
+        // томов). Без этого страница альбома оставалась пустой.
+        if list.is_empty() {
+            if let Some(volumes) = value.get("volumes").and_then(|v| v.as_array()) {
+                for volume in volumes {
+                    if let Some(items) = volume.as_array() {
+                        list.extend(items.iter().cloned());
+                    }
+                }
+            }
+        }
+
+        Ok(list
+            .iter()
+            .filter_map(|item| serde_json::from_value::<TrackDto>(item.clone()).ok())
+            .collect())
+    }
+
+    /// Данные исполнителя: имя и аватар.
+    ///
+    /// Отдельный запрос нужен потому, что в треках лежит только имя без
+    /// картинки — из-за этого на странице артиста стояла обложка трека.
+    pub async fn artist(&self, artist_id: &str) -> Result<ArtistDto> {
+        let value: serde_json::Value = self
+            .get(&format!("/artists/{artist_id}"), &[])
+            .await?;
+
+        let raw = value.get("artist").cloned().unwrap_or(value);
+        let artist: RawArtist =
+            serde_json::from_value(raw).map_err(|e| YmError::Shape(e.to_string()))?;
+
+        Ok(ArtistDto {
+            id: artist.id,
+            name: artist.name,
+            cover: artist
+                .cover
+                .as_ref()
+                .and_then(|c| c.uri.as_deref())
+                .map(|u| cover_url(u, "400x400")),
+        })
+    }
+
     pub async fn playlists(&self) -> Result<Vec<PlaylistDto>> {
         let raw: Vec<RawPlaylist> = self
             .get(&format!("/users/{}/playlists/list", self.uid), &[])
@@ -376,6 +431,12 @@ impl YmClient {
             .get(&format!("/users/{}/playlists/{kind}", self.uid), &[])
             .await?;
 
+        // Трек уже в плейлисте — второй раз не кладём: Яндекс бы продублировал
+        // его, а интерфейс и так показывает, что он там есть.
+        if raw.tracks.iter().any(|t| t.id == track_id) {
+            return Ok(());
+        }
+
         let revision = raw.revision.unwrap_or(1);
         let at = raw.track_count.max(raw.tracks.len() as u32);
 
@@ -385,6 +446,59 @@ impl YmClient {
         }
 
         let diff = serde_json::json!([{ "op": "insert", "at": at, "tracks": [track] }]).to_string();
+
+        let _: serde_json::Value = self
+            .post_form(
+                &format!("/users/{}/playlists/{kind}/change", self.uid),
+                &[],
+                vec![("diff", diff), ("revision", revision.to_string())],
+            )
+            .await?;
+        Ok(())
+    }
+
+    /// Переименовывает плейлист.
+    pub async fn playlist_rename(&self, kind: i64, title: &str) -> Result<()> {
+        let _: serde_json::Value = self
+            .post_form(
+                &format!("/users/{}/playlists/{kind}/rename", self.uid),
+                &[],
+                vec![("value", title.to_string())],
+            )
+            .await?;
+        Ok(())
+    }
+
+    /// Удаляет плейлист целиком.
+    pub async fn playlist_delete(&self, kind: i64) -> Result<()> {
+        let _: serde_json::Value = self
+            .post_form(
+                &format!("/users/{}/playlists/{kind}/delete", self.uid),
+                &[],
+                Vec::new(),
+            )
+            .await?;
+        Ok(())
+    }
+
+    /// Убирает трек из плейлиста.
+    ///
+    /// Формат удаления у Яндекса не такой, как у вставки: нужен диапазон
+    /// `from`/`to` по позициям, иначе сервер отвечает `wrong-json`.
+    pub async fn playlist_remove_track(&self, kind: i64, track_id: &str) -> Result<()> {
+        let raw: RawPlaylist = self
+            .get(&format!("/users/{}/playlists/{kind}", self.uid), &[])
+            .await?;
+
+        let at = raw
+            .tracks
+            .iter()
+            .position(|t| t.id == track_id)
+            .ok_or_else(|| YmError::Api("Трека нет в этом плейлисте".into()))?;
+
+        let revision = raw.revision.unwrap_or(1);
+        let diff =
+            serde_json::json!([{ "op": "delete", "from": at, "to": at + 1 }]).to_string();
 
         let _: serde_json::Value = self
             .post_form(

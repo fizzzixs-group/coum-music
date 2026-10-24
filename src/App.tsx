@@ -1,13 +1,18 @@
 import { useEffect } from "react";
 
 import { events } from "@/api/backend";
+import { BottomNav } from "@/components/BottomNav";
 import { PlayerBar } from "@/components/PlayerBar";
+import { PlaylistDialog } from "@/components/PlaylistDialog";
 import { Sidebar } from "@/components/Sidebar";
 import { TitleBar } from "@/components/TitleBar";
+import { useIsMobile } from "@/lib/platform";
 import { useLibrary } from "@/store/library";
 import { useNav } from "@/store/nav";
 import { currentTrack, usePlayer } from "@/store/player";
+import { useUi } from "@/store/ui";
 import { ArtistView } from "@/views/ArtistView";
+import { AlbumView } from "@/views/AlbumView";
 import { LikesView } from "@/views/LikesView";
 import { LoginView } from "@/views/LoginView";
 import { PlaylistView } from "@/views/PlaylistView";
@@ -27,6 +32,10 @@ export default function App() {
   const track = usePlayer(currentTrack);
   const notice = usePlayer((s) => s.notice);
   const setNotice = usePlayer((s) => s.setNotice);
+  const playlistPicker = useUi((s) => s.playlistPicker);
+  const closePlaylistPicker = useUi((s) => s.closePlaylistPicker);
+  // На телефоне интерфейс другой: навигация внизу, окно без своей шапки.
+  const mobile = useIsMobile();
 
   // Мягкое уведомление само исчезает — оно не должно мешать слушать.
   useEffect(() => {
@@ -34,6 +43,12 @@ export default function App() {
     const timer = setTimeout(() => setNotice(null), 4000);
     return () => clearTimeout(timer);
   }, [notice, setNotice]);
+
+  // Перешли в другой раздел — окно выбора плейлиста закрываем, чтобы оно
+  // не висело поверх новой вкладки.
+  useEffect(() => {
+    closePlaylistPicker();
+  }, [route, closePlaylistPicker]);
 
   useEffect(() => {
     void init();
@@ -64,8 +79,16 @@ export default function App() {
     };
 
     window.addEventListener("keydown", onKey);
+
+    // Своё меню у нас есть только там, где оно нужно (треки, очереди).
+    // Везде остальное системное меню браузера с «Назад / Обновить / Печать»
+    // в приложении выглядит чужеродно — убираем его глобально.
+    const blockContextMenu = (e: MouseEvent) => e.preventDefault();
+    window.addEventListener("contextmenu", blockContextMenu);
+
     return () => {
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("contextmenu", blockContextMenu);
       unlisten.forEach((fn) => fn());
     };
   }, [init, applyAccount, setError]);
@@ -86,6 +109,8 @@ export default function App() {
         return <WaveView />;
       case "artist":
         return <ArtistView route={route} />;
+      case "album":
+        return <AlbumView route={route} />;
       case "search":
         return <SearchView />;
       case "playlists":
@@ -100,19 +125,22 @@ export default function App() {
   };
 
   return (
-    <div className="app">
+    <div className="app" data-mobile={mobile}>
       {/* Свечение по цвету обложки — на всё окно, включая сайдбар и шапку:
           иначе видно резкую границу области контента. */}
       {route.name === "wave" && track?.cover && (
         <div className="app__glow" aria-hidden>
-          <img src={track.cover} alt="" />
+          {/* key: смена обложки создаёт новый элемент, и он проявляется
+              плавно, а не вспыхивает сразу. */}
+          <img key={track.cover} src={track.cover} alt="" />
           <div className="app__glow-veil" />
         </div>
       )}
 
       <TitleBar />
+
       <div className="body">
-        <Sidebar />
+        {!mobile && account && <Sidebar />}
         <main className="main">
           {error && (
             <div className="error-bar" role="alert">
@@ -126,8 +154,17 @@ export default function App() {
           {notice && <div className="toast">{notice}</div>}
         </main>
       </div>
-      {/* На «Моей волне» нижний плеер не нужен: там своё управление. */}
-      {route.name !== "wave" && <PlayerBar />}
+
+      {/* Плеер и навигация имеют смысл только после входа: на экране входа
+          они перекрывали карточку входа. */}
+      {account && route.name !== "wave" && <PlayerBar />}
+      {account && mobile && <BottomNav />}
+
+      {/* Диалог плейлистов живёт здесь: меню трека закрывается сразу после
+          клика, поэтому открывать окно из него нельзя. */}
+      {playlistPicker && (
+        <PlaylistDialog track={playlistPicker.track} onClose={closePlaylistPicker} />
+      )}
     </div>
   );
 }

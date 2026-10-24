@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 
 import { api, humanError } from "@/api/backend";
-import type { Track } from "@/api/types";
+import type { Artist, Track } from "@/api/types";
+import { Cover } from "@/components/Cover";
 import { IconPlay } from "@/components/Icons";
 import { TrackList } from "@/components/TrackList";
 import { trackCount } from "@/lib/format";
@@ -13,6 +14,7 @@ type Props = { route: Extract<Route, { name: "artist" }> };
 /** Все треки исполнителя — открывается по клику на его имя. */
 export function ArtistView({ route }: Props) {
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [artist, setArtist] = useState<Artist | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const playTracks = usePlayer((s) => s.playTracks);
@@ -22,6 +24,14 @@ export function ArtistView({ route }: Props) {
     setLoading(true);
     setError(null);
     setTracks([]);
+    setArtist(null);
+
+    // Карточку артиста и треки просим вместе: аватар и список независимы,
+    // и если аватар не отдался, страница всё равно покажет треки.
+    void api
+      .artist(route.id)
+      .then((info) => !cancelled && setArtist(info))
+      .catch(() => {});
 
     void api
       .artistTracks(route.id)
@@ -34,15 +44,22 @@ export function ArtistView({ route }: Props) {
     };
   }, [route.id]);
 
-  const cover = tracks.find((t) => t.cover)?.cover ?? null;
+  // Аватар берём у самого артиста; обложка трека — только запасной вариант.
+  const cover = artist?.cover ?? tracks.find((t) => t.cover)?.cover ?? null;
 
   return (
     <div className="view scroll">
       <div className="page-head">
-        <img className="page-head__cover" src={cover ?? undefined} alt="" />
+        <Cover
+          className="page-head__cover page-head__cover--round"
+          src={cover}
+          seed={route.id}
+          alt=""
+          round
+        />
         <div style={{ minWidth: 0 }}>
           <div className="page-head__kicker">Исполнитель</div>
-          <h1 className="page-head__title">{route.title}</h1>
+          <h1 className="page-head__title">{artist?.name || route.title}</h1>
           <div className="page-head__meta">
             {loading ? "Загружаю…" : trackCount(tracks.length)}
           </div>

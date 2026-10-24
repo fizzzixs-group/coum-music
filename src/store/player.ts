@@ -170,6 +170,22 @@ export const usePlayer = create<PlayerState>()((set, get) => ({
   seedWaveFromTrack: async (track) => {
     const station = trackStation(track);
     const label = `Волна по треку · ${track.title}`;
+    const state = get();
+    const current = state.queue[state.index];
+
+    // Трек уже играет — не перезапускаем: человек нажал «волну по треку»,
+    // а не «играть сначала». Станция подхватится, когда трек доиграет,
+    // поэтому склейки на слух не слышно.
+    if (current && current.id === track.id) {
+      set({
+        source: { kind: "wave", station, label },
+        seedContinuation: { station, label },
+        batchId: null,
+        error: null,
+      });
+      return;
+    }
+
     set({
       queue: [track],
       index: 0,

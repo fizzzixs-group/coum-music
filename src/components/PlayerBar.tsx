@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { formatSeconds } from "@/lib/format";
+import { formatSeconds, shownDuration } from "@/lib/format";
 import { useLibrary } from "@/store/library";
 import { useNav } from "@/store/nav";
 import { usePlayer } from "@/store/player";
@@ -20,6 +20,7 @@ import {
 } from "./Icons";
 import { Menu, type MenuEntry } from "./Menu";
 import { Slider } from "./Slider";
+import { WaveSlider } from "./WaveSlider";
 
 export function PlayerBar() {
   const track = usePlayer((s) => s.queue[s.index] ?? null);
@@ -44,7 +45,7 @@ export function PlayerBar() {
   const [scrub, setScrub] = useState<number | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 
-  const duration = realDuration > 0 ? realDuration : (track?.durationMs ?? 0) / 1000;
+  const duration = shownDuration(realDuration, track?.durationMs ?? 0);
   const shown = scrub ?? position;
 
   useEffect(() => setScrub(null), [track?.id]);
@@ -78,7 +79,15 @@ export function PlayerBar() {
     : [];
 
   return (
-    <footer className="player">
+    <footer
+      className="player"
+      // На телефоне это компактная строка над навигацией: тап по ней
+      // открывает полноэкранный плеер, как в мобильных приложениях.
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("button")) return;
+        useNav.getState().go({ name: "wave" });
+      }}
+    >
       <div className="player__now">
         {track ? (
           <>
@@ -134,7 +143,7 @@ export function PlayerBar() {
 
         <div className="player__timeline">
           <span className="player__time">{formatSeconds(shown)}</span>
-          <Slider
+          <WaveSlider
             ariaLabel="Позиция трека"
             value={shown}
             max={duration || 1}

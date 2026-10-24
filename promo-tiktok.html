@@ -1,0 +1,1629 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Coum Music — промо</title>
+    <style>
+      /* Шрифт интерфейса — тот же, что в приложении; подписи — узкий плотный. */
+      @font-face {
+        font-family: "Roboto";
+        font-weight: 400;
+        font-display: swap;
+        src: url("src/assets/fonts/roboto/roboto-cyrillic-400.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Roboto";
+        font-weight: 500;
+        font-display: swap;
+        src: url("src/assets/fonts/roboto/roboto-cyrillic-500.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Roboto";
+        font-weight: 700;
+        font-display: swap;
+        src: url("src/assets/fonts/roboto/roboto-cyrillic-700.woff2") format("woff2");
+      }
+
+      :root {
+        --base: #0b110d;
+        --s1: #121a15;
+        --s2: #1a231d;
+        --s3: #232e26;
+        --s4: #2d3a31;
+        --on: #eaf4ee;
+        --onv: #9fb2a7;
+        --onf: #6d7d74;
+        --primary: #3ddc84;
+        --lime: #b6ff3c;
+        --violet: #7c3aed;
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+        --pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+        --display: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI Semibold", sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        height: 100%;
+        /* По бокам — тёмный градиент: вертикальный кадр читается как
+           задуманный, а не как «не влезло». */
+        background: radial-gradient(60% 60% at 50% 40%, #0b1410, #04070a 70%);
+        font-family: "Roboto", system-ui, sans-serif;
+        overflow: hidden;
+        user-select: none;
+      }
+
+      /* Сцена занимает всё окно целиком: подпись сверху, окно приложения
+         в середине, ссылки снизу. Так кадр выглядит собранным и в узком
+         вертикальном окне, и в широком — ничего не обрезается. */
+      .frame {
+        position: fixed;
+        inset: 0;
+      }
+      .stage {
+        /* Кадр всегда 9:16 — вертикально, как для TikTok. В широком окне он
+           просто встаёт по центру, целиком сохраняя пропорции. */
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        aspect-ratio: 9 / 16;
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: hidden;
+        background: radial-gradient(72% 46% at 50% 14%, #12281a, var(--base) 68%);
+        color: var(--on);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+      }
+      /* Окно приложения задано в своих пикселях и масштабируется целиком */
+      .windowWrap {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        overflow: hidden;
+      }
+      .aurora {
+        position: absolute;
+        inset: -10%;
+        background:
+          radial-gradient(38% 20% at 50% 10%, rgba(61, 220, 132, 0.45), transparent 70%),
+          radial-gradient(32% 18% at 10% 80%, rgba(182, 255, 60, 0.18), transparent 70%),
+          radial-gradient(34% 20% at 90% 60%, rgba(124, 58, 237, 0.26), transparent 72%);
+        filter: blur(60px);
+        animation: aurora 12s var(--ease) infinite alternate;
+      }
+      @keyframes aurora {
+        to {
+          transform: scale(1.1);
+          opacity: 1;
+        }
+      }
+
+      /* ── Подписи сцен ─────────────────────────────────────────────── */
+      .caption {
+        width: 100%;
+        padding: clamp(18px, 4vh, 54px) 4vw 0;
+        z-index: 30;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .caption > * {
+        opacity: 0;
+        transform: translateY(24px);
+        transition:
+          opacity 0.45s var(--ease),
+          transform 0.55s var(--pop);
+      }
+      .caption.is-on > * {
+        opacity: 1;
+        transform: none;
+      }
+      .caption.is-on > *:nth-child(2) {
+        transition-delay: 0.1s;
+      }
+      .caption__title {
+        font-family: var(--display);
+        font-size: clamp(30px, 6.2vmin, 92px);
+        font-weight: 700;
+        line-height: 1.03;
+        text-transform: uppercase;
+        letter-spacing: -0.02em;
+        background: linear-gradient(100deg, #fff 10%, var(--lime) 58%, var(--primary) 96%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .caption__sub {
+        display: inline-block;
+        margin-top: clamp(8px, 1.4vh, 20px);
+        padding: clamp(4px, 0.8vh, 10px) clamp(12px, 1.6vw, 24px);
+        border-radius: 99px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: clamp(12px, 2.1vmin, 28px);
+        color: var(--onv);
+        white-space: nowrap;
+      }
+      .caption__sub:empty {
+        display: none;
+      }
+      .caption--small .caption__title {
+        font-size: clamp(26px, 5.2vmin, 76px);
+      }
+
+      /* ── Окно приложения ─────────────────────────────────────────── */
+      .window {
+        /* Окно нарисовано в своих пикселях и масштабируется целиком.
+           Абсолютное позиционирование с translate(-50%,-50%) центрирует его
+           при любом размере окна браузера — без зависимости от раскладки. */
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 1560px;
+        height: 1020px;
+        transform: translate(-50%, -50%) scale(var(--ws, 1));
+        transform-origin: center center;
+        border-radius: 26px;
+        background: var(--base);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        box-shadow: 0 60px 140px rgba(0, 0, 0, 0.65);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        z-index: 10;
+      }
+      .titlebar {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        height: 74px;
+        padding: 0 26px;
+        flex-shrink: 0;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .brand__name {
+        font-size: 26px;
+        font-weight: 500;
+      }
+      .brand__name b {
+        color: var(--onf);
+        font-weight: 500;
+      }
+      .search {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        height: 52px;
+        padding: 0 22px;
+        border-radius: 99px;
+        background: var(--s1);
+        color: var(--onf);
+        font-size: 22px;
+        transition: box-shadow 0.3s var(--ease);
+      }
+      .search.is-focus {
+        box-shadow: 0 0 0 2px var(--primary);
+      }
+      .search__text {
+        color: var(--on);
+      }
+      .winbtns {
+        display: flex;
+        gap: 8px;
+      }
+      .winbtn {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        color: var(--onv);
+      }
+      .winbtn--close {
+        color: #ff8a8a;
+      }
+      .winbody {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+
+      /* Рейл: значки, при наведении раскрывается с подписями */
+      .rail {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 96px;
+        padding: 14px 12px;
+        flex-shrink: 0;
+        transition: width 0.35s var(--ease);
+      }
+      .rail.is-open {
+        width: 310px;
+      }
+      .rail__item {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        height: 58px;
+        padding: 0 16px;
+        border-radius: 18px;
+        color: var(--onv);
+        font-size: 22px;
+        white-space: nowrap;
+        transition: background 0.25s var(--ease);
+      }
+      .rail__item.is-active {
+        background: rgba(61, 220, 132, 0.16);
+        color: var(--on);
+      }
+      .rail__item.is-pressed {
+        transform: scale(0.97);
+      }
+      .rail__label {
+        opacity: 0;
+        transition: opacity 0.25s var(--ease);
+      }
+      .rail.is-open .rail__label {
+        opacity: 1;
+      }
+
+      .content {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+      }
+      .page {
+        position: absolute;
+        inset: 8px 28px 0;
+        display: flex;
+        flex-direction: column;
+        opacity: 0;
+        transform: translateY(18px);
+        transition:
+          opacity 0.35s var(--ease),
+          transform 0.45s var(--ease);
+        pointer-events: none;
+      }
+      .page.is-on {
+        opacity: 1;
+        transform: none;
+      }
+
+      .badge {
+        align-self: center;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        height: 54px;
+        padding: 0 26px;
+        border-radius: 99px;
+        background: var(--s1);
+        color: var(--onv);
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .badge svg {
+        color: var(--primary);
+      }
+      /* Обложек нет — только цвет: градиент вместо картинки */
+      .art {
+        position: relative;
+        width: 400px;
+        height: 400px;
+        margin: 20px auto 0;
+        border-radius: 34px;
+        background: linear-gradient(145deg, var(--lime), var(--primary) 46%, var(--violet));
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
+        overflow: hidden;
+      }
+      .art::after {
+        content: "";
+        position: absolute;
+        inset: -40%;
+        background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.28), transparent 38%);
+        animation: spin 9s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(1turn);
+        }
+      }
+      .track {
+        text-align: center;
+        margin-top: 18px;
+      }
+      .track__title {
+        font-size: 38px;
+        font-weight: 500;
+      }
+      .track__artist {
+        margin-top: 6px;
+        font-size: 23px;
+        color: var(--onv);
+      }
+      .viz {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 16px;
+        height: 120px;
+        margin-top: 16px;
+      }
+      .viz i {
+        width: 22px;
+        height: 16%;
+        border-radius: 12px;
+        background: var(--primary);
+      }
+      .timeline {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin: 18px 60px 0;
+        font-size: 21px;
+        color: var(--onv);
+      }
+      .timeline__track {
+        position: relative;
+        flex: 1;
+        height: 9px;
+        border-radius: 99px;
+        background: var(--s3);
+        overflow: hidden;
+      }
+      .timeline__track i {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 8%;
+        border-radius: 99px;
+        background: var(--primary);
+      }
+
+      .pagetitle {
+        font-size: 44px;
+        font-weight: 500;
+      }
+      .pagesub {
+        margin-top: 6px;
+        font-size: 22px;
+        color: var(--onv);
+      }
+      .actions {
+        display: flex;
+        gap: 14px;
+        margin-top: 22px;
+      }
+      .btn {
+        display: grid;
+        place-items: center;
+        height: 62px;
+        padding: 0 30px;
+        border-radius: 99px;
+        background: var(--primary);
+        color: #05200f;
+        font-size: 22px;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: transform 0.15s var(--ease);
+      }
+      .btn--ghost {
+        background: transparent;
+        border: 1px solid var(--s4);
+        color: var(--on);
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 22px;
+        margin-top: 26px;
+      }
+      .card {
+        opacity: 0;
+        transform: translateY(20px) scale(0.96);
+        transition:
+          opacity 0.4s var(--ease),
+          transform 0.5s var(--pop);
+      }
+      .card.is-on {
+        opacity: 1;
+        transform: none;
+      }
+      .card__art {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 22px;
+      }
+      .card__name {
+        margin-top: 12px;
+        font-size: 22px;
+        font-weight: 500;
+      }
+      .card__meta {
+        margin-top: 4px;
+        font-size: 18px;
+        color: var(--onv);
+      }
+
+      .head,
+      .row {
+        display: grid;
+        grid-template-columns: 60px 1fr 210px 90px 40px;
+        align-items: center;
+        gap: 16px;
+      }
+      .head {
+        padding: 16px 12px 12px;
+        font-size: 16px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--onf);
+        border-bottom: 1px solid var(--s2);
+      }
+      .row {
+        padding: 12px;
+        border-radius: 18px;
+        opacity: 0;
+        transform: translateY(14px);
+        transition:
+          opacity 0.35s var(--ease),
+          transform 0.45s var(--ease);
+      }
+      .row.is-on {
+        opacity: 1;
+        transform: none;
+      }
+      .row.is-current {
+        background: var(--s1);
+      }
+      .row__art {
+        width: 54px;
+        height: 54px;
+        border-radius: 14px;
+      }
+      .row__name {
+        font-size: 23px;
+      }
+      .row__artist {
+        margin-top: 3px;
+        font-size: 18px;
+        color: var(--onv);
+      }
+      .row__album,
+      .row__time {
+        font-size: 18px;
+        color: var(--onv);
+      }
+
+      .themegrid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 28px;
+        margin-top: 26px;
+      }
+      .theme {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        font-size: 18px;
+        color: var(--onv);
+      }
+      .theme__dot {
+        width: 84px;
+        height: 84px;
+        border-radius: 99px;
+      }
+      .theme.is-active .theme__dot {
+        outline: 3px solid var(--on);
+        outline-offset: 5px;
+      }
+      .eq {
+        display: grid;
+        grid-template-columns: 220px 1fr 90px;
+        align-items: center;
+        gap: 28px;
+        padding: 9px 0;
+      }
+      .eq__freq,
+      .eq__gain {
+        font-size: 21px;
+        color: var(--onv);
+      }
+      .eq__gain {
+        text-align: right;
+        color: var(--on);
+      }
+      .eq__bar {
+        position: relative;
+        height: 12px;
+        border-radius: 99px;
+        background: var(--s3);
+      }
+      .eq__bar i {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 5px;
+        border-radius: 99px;
+        background: var(--primary);
+      }
+
+      .playerbar {
+        display: grid;
+        grid-template-columns: 1fr 1.6fr 1fr;
+        align-items: center;
+        gap: 26px;
+        height: 122px;
+        padding: 0 30px;
+        background: var(--s1);
+        flex-shrink: 0;
+      }
+      .mini {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        min-width: 0;
+      }
+      .mini__art {
+        width: 70px;
+        height: 70px;
+        border-radius: 16px;
+        flex-shrink: 0;
+      }
+      .mini__name {
+        font-size: 23px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .mini__artist {
+        margin-top: 3px;
+        font-size: 19px;
+        color: var(--onv);
+      }
+      .controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+      }
+      .rbtn {
+        display: grid;
+        place-items: center;
+        width: 56px;
+        height: 56px;
+        border-radius: 99px;
+        background: transparent;
+        color: var(--on);
+        transition: transform 0.15s var(--ease);
+      }
+      .rbtn--play {
+        width: 66px;
+        height: 66px;
+        background: var(--primary);
+        color: #05200f;
+        box-shadow: 0 12px 30px rgba(61, 220, 132, 0.35);
+      }
+      .rightbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 18px;
+        color: var(--onv);
+      }
+      .volume {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 190px;
+      }
+      .volume__track {
+        position: relative;
+        flex: 1;
+        height: 8px;
+        border-radius: 99px;
+        background: var(--s3);
+      }
+      .volume__track i {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 72%;
+        border-radius: 99px;
+        background: var(--primary);
+      }
+
+      /* ── Всплывающие слои ────────────────────────────────────────── */
+      .menu {
+        position: absolute;
+        right: 60px;
+        top: 290px;
+        width: 580px;
+        padding: 14px;
+        border-radius: 30px;
+        background: var(--s2);
+        box-shadow: 0 40px 90px rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        transform: translateY(18px) scale(0.95);
+        transform-origin: top right;
+        transition:
+          opacity 0.22s var(--ease),
+          transform 0.3s var(--pop);
+        z-index: 20;
+      }
+      .menu.is-on {
+        opacity: 1;
+        transform: none;
+      }
+      .menu__item {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 19px 20px;
+        border-radius: 22px;
+        font-size: 25px;
+      }
+      .menu__item.is-pressed {
+        background: var(--s3);
+      }
+      .menu__item svg {
+        color: var(--onv);
+        flex-shrink: 0;
+      }
+      .menu__sep {
+        height: 1px;
+        margin: 10px 18px;
+        background: var(--s4);
+      }
+      .sheet {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 880px;
+        padding: 44px;
+        border-radius: 36px;
+        background: var(--s2);
+        box-shadow: 0 50px 120px rgba(0, 0, 0, 0.7);
+        opacity: 0;
+        transform: translate(-50%, -46%) scale(0.94);
+        transition:
+          opacity 0.25s var(--ease),
+          transform 0.35s var(--pop);
+        z-index: 22;
+        pointer-events: none;
+      }
+      .sheet.is-on {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      .sheet__title {
+        font-size: 38px;
+        font-weight: 500;
+      }
+      .sheet__sub {
+        margin-top: 8px;
+        font-size: 23px;
+        color: var(--onv);
+      }
+      .sheet__row {
+        display: flex;
+        gap: 16px;
+        margin-top: 26px;
+      }
+      .input {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        height: 66px;
+        padding: 0 26px;
+        border: 2px solid var(--s4);
+        border-radius: 99px;
+        background: var(--base);
+        font-size: 24px;
+      }
+      .input.is-focus {
+        border-color: var(--primary);
+      }
+      .input__ph {
+        color: var(--onf);
+      }
+      .sheet__list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 24px;
+      }
+      .plrow {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 14px 18px;
+        border-radius: 22px;
+      }
+      .plrow.is-pressed {
+        background: var(--s3);
+      }
+      .plrow__art {
+        width: 70px;
+        height: 70px;
+        border-radius: 18px;
+        flex-shrink: 0;
+      }
+      .plrow__name {
+        flex: 1;
+        font-size: 25px;
+      }
+      .plrow__meta {
+        display: block;
+        margin-top: 4px;
+        font-size: 19px;
+        color: var(--onv);
+      }
+      .plrow__mark {
+        color: var(--primary);
+      }
+      .toast {
+        position: absolute;
+        left: 50%;
+        top: 112px;
+        padding: 18px 38px;
+        border-radius: 99px;
+        background: var(--s3);
+        font-size: 25px;
+        white-space: nowrap;
+        opacity: 0;
+        transform: translate(-50%, -16px);
+        transition:
+          opacity 0.3s var(--ease),
+          transform 0.35s var(--pop);
+        z-index: 26;
+      }
+      .toast.is-on {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      .paused {
+        position: absolute;
+        left: 50%;
+        bottom: 11%;
+        transform: translateX(-50%);
+        padding: 14px 30px;
+        border-radius: 99px;
+        background: rgba(20, 26, 22, 0.9);
+        border: 1px solid var(--s4);
+        font-size: clamp(13px, 1.8vmin, 24px);
+        color: var(--primary);
+        opacity: 0;
+        transition: opacity 0.3s var(--ease);
+        z-index: 26;
+        white-space: nowrap;
+      }
+      .paused.is-on {
+        opacity: 1;
+      }
+
+      /* ── Подвал с ссылками ───────────────────────────────────────── */
+      .footer {
+        width: 100%;
+        padding: 0 4vw clamp(14px, 3vh, 44px);
+        z-index: 25;
+        text-align: center;
+        flex-shrink: 0;
+        opacity: 0;
+        transform: translateY(18px);
+        transition:
+          opacity 0.5s var(--ease),
+          transform 0.6s var(--ease);
+      }
+      .footer.is-on {
+        opacity: 1;
+        transform: none;
+      }
+      .footer__links {
+        display: flex;
+        justify-content: center;
+        gap: clamp(8px, 1.4vw, 16px);
+        flex-wrap: wrap;
+      }
+      .footer__link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: clamp(8px, 1.4vh, 15px) clamp(14px, 2vw, 28px);
+        border-radius: 99px;
+        background: var(--s2);
+        font-size: clamp(12px, 1.9vmin, 26px);
+      }
+      .footer__link svg {
+        color: var(--primary);
+        width: clamp(16px, 2.2vmin, 28px);
+        height: clamp(16px, 2.2vmin, 28px);
+      }
+      .footer__note {
+        margin-top: clamp(8px, 1.6vh, 20px);
+        font-size: clamp(10px, 1.6vmin, 20px);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--onf);
+      }
+
+      /* ── Заставка ────────────────────────────────────────────────── */
+      .splash {
+        position: absolute;
+        inset: 0;
+        z-index: 40;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+        background: radial-gradient(60% 40% at 50% 44%, #12281a, var(--base) 72%);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.5s var(--ease);
+      }
+      .splash.is-on {
+        opacity: 1;
+      }
+      .splash__name {
+        font-family: var(--display);
+        font-size: 104px;
+        font-weight: 700;
+        text-transform: uppercase;
+        background: linear-gradient(100deg, #fff 8%, var(--lime) 58%, var(--primary) 96%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .splash__tag {
+        font-size: 32px;
+        color: var(--onv);
+      }
+      .splash__fork {
+        font-size: 26px;
+        color: var(--onf);
+      }
+      .splash__bar {
+        width: 380px;
+        height: 6px;
+        border-radius: 99px;
+        background: var(--s3);
+        overflow: hidden;
+      }
+      .splash__bar i {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, var(--lime), var(--primary));
+      }
+      .splash__bar.is-run i {
+        animation: load 1.8s var(--ease) forwards;
+      }
+      @keyframes load {
+        to {
+          width: 100%;
+        }
+      }
+
+      /* ── Курсор ──────────────────────────────────────────────────── */
+      .cursor {
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 60;
+        width: 56px;
+        height: 56px;
+        margin: -10px 0 0 -8px;
+        transform: translate(-200px, -200px);
+        transition: transform 0.75s var(--ease);
+        filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.6));
+        pointer-events: none;
+      }
+      .cursor svg {
+        transition: transform 0.12s var(--ease);
+      }
+      .cursor.is-tap svg {
+        transform: scale(0.76);
+      }
+      .ripple {
+        position: absolute;
+        z-index: 59;
+        width: 30px;
+        height: 30px;
+        margin: -15px 0 0 -15px;
+        border-radius: 99px;
+        border: 3px solid var(--primary);
+        opacity: 0;
+        pointer-events: none;
+      }
+      .ripple.is-on {
+        animation: ripple 0.65s var(--ease) forwards;
+      }
+      @keyframes ripple {
+        from {
+          opacity: 0.9;
+          transform: scale(0.5);
+        }
+        to {
+          opacity: 0;
+          transform: scale(5);
+        }
+      }
+
+      .hint,
+      .replay {
+        position: fixed;
+        z-index: 90;
+        padding: 10px 20px;
+        border: 1px solid var(--s4);
+        border-radius: 99px;
+        background: rgba(18, 26, 21, 0.94);
+        color: var(--onv);
+        font-family: inherit;
+        font-size: 13px;
+      }
+      .hint {
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        transition: opacity 0.4s var(--ease);
+      }
+      .hint.is-hidden {
+        opacity: 0;
+      }
+      .hint kbd {
+        padding: 2px 8px;
+        border-radius: 6px;
+        background: var(--s3);
+        color: var(--on);
+        font-family: inherit;
+      }
+      .replay {
+        right: 16px;
+        top: 16px;
+        color: var(--on);
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s var(--ease);
+      }
+      .replay.is-on {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="frame">
+      <div class="stage" id="stage">
+        <div class="aurora"></div>
+
+        <div class="caption" id="caption">
+          <div class="caption__title" id="capTitle">Моя волна</div>
+          <div class="caption__sub" id="capSub">включил — и дальше подбор идёт сам</div>
+        </div>
+
+        <div class="windowWrap">
+        <div class="window" id="win">
+          <div class="titlebar">
+            <div class="brand">
+              <span id="brandMark"></span>
+              <span class="brand__name">Coum <b>Music</b></span>
+            </div>
+            <div class="search" id="search">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+              <span class="search__text" id="searchText">Поиск: треки, исполнители, альбомы</span>
+            </div>
+            <div class="winbtns">
+              <span class="winbtn"><svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14" /></svg></span>
+              <span class="winbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="2" /></svg></span>
+              <span class="winbtn winbtn--close"><svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18" /></svg></span>
+            </div>
+          </div>
+
+          <div class="winbody">
+            <aside class="rail" id="rail">
+              <div class="rail__item is-active" data-rail="wave">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 14c2.5 0 3-7 5.5-7S11 17 13.5 17 16 7 18.5 7 21 12 21 12" /></svg>
+                <span class="rail__label">Моя волна</span>
+              </div>
+              <div class="rail__item" data-rail="playlists">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 18V6.5l9-2V16" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="15.5" cy="16" r="2.5" /></svg>
+                <span class="rail__label">Плейлисты</span>
+              </div>
+              <div class="rail__item" data-rail="likes">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 7.9a3.9 3.9 0 0 1 7 2.7C19 15.4 12 20 12 20z" /></svg>
+                <span class="rail__label">Мне нравится</span>
+              </div>
+              <div class="rail__item" data-rail="settings">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 0 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 2.6 15a2 2 0 0 1 0-4 1.7 1.7 0 0 0 1.8-2.9l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4.6a2 2 0 0 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21.4 11a2 2 0 0 1 0 4z" /></svg>
+                <span class="rail__label">Настройки</span>
+              </div>
+            </aside>
+
+            <div class="content">
+              <div class="page is-on" id="pageWave">
+                <span class="badge">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M17.7 6.3l-2.8 2.8M9.1 14.9l-2.8 2.8" /></svg>
+                  Моя волна
+                </span>
+                <div class="art"></div>
+                <div class="track">
+                  <div class="track__title">Не спать</div>
+                  <div class="track__artist">алгоритм, драгонманов</div>
+                </div>
+                <div class="viz" id="viz"></div>
+                <div class="timeline">
+                  <span id="posLabel">0:13</span>
+                  <div class="timeline__track"><i id="seek"></i></div>
+                  <span>2:18</span>
+                </div>
+              </div>
+
+              <div class="page" id="pagePlaylists">
+                <h1 class="pagetitle">Плейлисты</h1>
+                <p class="pagesub" id="plSub">2 шт. — всё, что ты собрал</p>
+                <div class="actions">
+                  <div class="btn" id="createBtn">＋ Создать плейлист</div>
+                  <div class="btn btn--ghost">↻ Обновить</div>
+                </div>
+                <div class="cards" id="plCards">
+                  <div class="card is-on">
+                    <div class="card__art" style="background: linear-gradient(150deg, #3ddc84, #12401f)"></div>
+                    <div class="card__name">Ночная дорога</div>
+                    <div class="card__meta">17 треков</div>
+                  </div>
+                  <div class="card is-on">
+                    <div class="card__art" style="background: linear-gradient(150deg, #7c3aed, #2a1055)"></div>
+                    <div class="card__name">Для машины</div>
+                    <div class="card__meta">8 треков</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="page" id="pageList">
+                <h1 class="pagetitle" id="listTitle">Мне нравится</h1>
+                <p class="pagesub" id="listSub">757 треков · 2055:23</p>
+                <div class="head"><span>#</span><span>Трек</span><span>Альбом</span><span>Время</span><span></span></div>
+                <div id="rows" style="margin-top: 8px"></div>
+              </div>
+
+              <div class="page" id="pageSettings">
+                <h1 class="pagetitle">Настройки</h1>
+                <p class="pagesub">Тема меняет акцент и фон всего приложения</p>
+                <div class="themegrid" id="themes"></div>
+                <p class="pagesub" style="margin-top: 30px">Эквалайзер · десять полос, ±12 дБ</p>
+                <div id="eq" style="margin-top: 14px"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="playerbar">
+            <div class="mini">
+              <div class="mini__art" style="background: linear-gradient(150deg, #b6ff3c, #3ddc84)"></div>
+              <div style="min-width: 0">
+                <div class="mini__name">Не спать</div>
+                <div class="mini__artist">алгоритм, драгонманов</div>
+              </div>
+            </div>
+            <div class="controls">
+              <div class="rbtn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 7.9a3.9 3.9 0 0 1 7 2.7C19 15.4 12 20 12 20z" /></svg></div>
+              <div class="rbtn"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h2v14H7zM19 5v14l-9-7z" /></svg></div>
+              <div class="rbtn rbtn--play" id="barPlay"><svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5h3v14H8zM13 5h3v14h-3z" /></svg></div>
+              <div class="rbtn"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M15 5h2v14h-2zM5 5v14l9-7z" /></svg></div>
+              <div class="rbtn" id="barMore"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg></div>
+            </div>
+            <div class="rightbar">
+              <span style="font-size: 20px">MP3</span>
+              <div class="volume">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 5 6.5 9H3v6h3.5L11 19z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /></svg>
+                <div class="volume__track"><i></i></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu" id="trackMenu">
+            <div class="menu__item"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>Играть</div>
+            <div class="menu__item" id="menuWave"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 14c2.5 0 3-7 5.5-7S11 17 13.5 17 16 7 18.5 7 21 12 21 12" /></svg>Включить волну по этому треку</div>
+            <div class="menu__item"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h11M4 12h11M4 17h7" /><path d="m17 14 3 3-3 3" /></svg>В очередь</div>
+            <div class="menu__item" id="menuAdd"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>Добавить в плейлист</div>
+            <div class="menu__sep"></div>
+            <div class="menu__item"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 7.9a3.9 3.9 0 0 1 7 2.7C19 15.4 12 20 12 20z" /></svg>В избранное</div>
+          </div>
+
+          <div class="sheet" id="sheetNew">
+            <div class="sheet__title">Новый плейлист</div>
+            <div class="sheet__row">
+              <div class="input is-focus" id="newInput"><span class="input__ph" id="newText">Название плейлиста</span></div>
+              <div class="btn" id="newBtn">Создать</div>
+            </div>
+            <div class="sheet__list">
+              <div class="plrow">
+                <div class="plrow__art" style="background: linear-gradient(150deg, #b6ff3c, #3ddc84)"></div>
+                <div class="plrow__name">Плейлист появится и в приложении, и в Яндекс.Музыке</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sheet" id="sheetAdd">
+            <div class="sheet__title">Добавить в плейлист</div>
+            <div class="sheet__sub">Не спать</div>
+            <div class="sheet__list">
+              <div class="plrow" id="rowNight">
+                <div class="plrow__art" style="background: linear-gradient(150deg, #3ddc84, #12401f)"></div>
+                <div class="plrow__name">Ночная дорога<span class="plrow__meta">17 треков</span></div>
+                <svg class="plrow__mark" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              </div>
+              <div class="plrow">
+                <div class="plrow__art" style="background: linear-gradient(150deg, #7c3aed, #2a1055)"></div>
+                <div class="plrow__name">Для машины<span class="plrow__meta">8 треков</span></div>
+                <svg class="plrow__mark" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="toast" id="toast">«Не спать» добавлен в «Ночная дорога»</div>
+        </div>
+        </div>
+
+        <div class="paused" id="pausedBadge">пауза · спектр замер</div>
+
+        <div class="footer" id="footer">
+          <div class="footer__links">
+            <span class="footer__link">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.9 19c-.2 1-.8 1.2-1.7.8l-4.6-3.4-2.2 2.1c-.3.3-.5.5-1 .5l.4-4.9 8.6-7.8c.4-.3-.1-.5-.6-.2L7.2 12.7 2.7 11c-1-.3-1-1 .2-1.4l17.6-6.8c.8-.3 1.5.2 1.4 1.5z" /></svg>
+              t.me/coumfun
+            </span>
+            <span class="footer__link">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .4.3.7 1 .7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2z" /></svg>
+              github.com/fizzzixs-group/coum-music
+            </span>
+          </div>
+          <div class="footer__note">Windows · Android — в разработке</div>
+        </div>
+
+        <div class="splash" id="splash">
+          <span id="splashMark"></span>
+          <div class="splash__name">Coum Music</div>
+          <div class="splash__tag">Только музыка. Ничего лишнего</div>
+          <div class="splash__fork">форк Яндекс.Музыки</div>
+          <div class="splash__bar" id="splashBar"><i></i></div>
+        </div>
+
+        <div class="ripple" id="ripple"></div>
+        <div class="cursor" id="cursor">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none"><path d="M5 3.2 19.2 11l-6.4 1.7L10.4 19z" fill="#fff" stroke="#0b110d" stroke-width="1.2" stroke-linejoin="round" /></svg>
+        </div>
+      </div>
+    </div>
+
+    <button class="replay" id="replay">↻ Заново (R)</button>
+    <div class="hint" id="hint">Разверни окно вертикально и нажми <kbd>F11</kbd>, потом начинай запись</div>
+
+    <script>
+      /* ═════════════════════════════════════════════════════════════════
+         Промо-ролик: девять сцен, около 90 секунд.
+
+         Спектр и таймлайн двигает один цикл requestAnimationFrame, поэтому
+         пауза действительно останавливает движение, а не только меняет
+         значок на кнопке.
+         ═════════════════════════════════════════════════════════════════ */
+
+      const $ = (id) => document.getElementById(id);
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const stage = $("stage");
+
+      /* Окно приложения нарисовано в своих пикселях (1560×1020) и целиком
+         вписывается в свободное место — поэтому оно видно полностью в любом
+         размере окна браузера. */
+      let ws = 1;
+      function fit() {
+        const wrap = document.querySelector(".windowWrap");
+        if (!wrap) return;
+        ws = Math.min(wrap.clientWidth / 1620, wrap.clientHeight / 1060);
+        ws = Math.max(ws, 0.15);
+        document.documentElement.style.setProperty("--ws", ws);
+      }
+      addEventListener("resize", fit);
+      setInterval(fit, 400); // окно может менять размер без события resize
+      fit();
+
+      const logo = (s) =>
+        `<img src="app-icon.png" width="${s}" height="${s}" alt="Coum Music"
+              style="border-radius:${Math.round(s * 0.22)}px;display:block" />`;
+      $("brandMark").innerHTML = logo(34);
+      $("splashMark").innerHTML = logo(150);
+
+      /* Спектр и таймлайн: общее состояние, чтобы пауза останавливала всё */
+      const bars = [];
+      for (let i = 0; i < 10; i++) {
+        const el = document.createElement("i");
+        $("viz").appendChild(el);
+        bars.push({ el, value: 0.2, speed: 0.6 + Math.random() * 1.4, phase: Math.random() * 6.2 });
+      }
+      const DURATION = 138;
+      let playing = true;
+      let position = 13;
+      let last = performance.now();
+
+      function loop(now) {
+        const dt = Math.min((now - last) / 1000, 0.05);
+        last = now;
+        if (playing) {
+          position = position > DURATION ? 0 : position + dt;
+        }
+        for (const b of bars) {
+          if (playing) {
+            b.phase += dt * b.speed * 3.2;
+            const goal = 0.18 + 0.82 * Math.abs(Math.sin(b.phase) * 0.72 + Math.sin(b.phase * 0.53) * 0.28);
+            b.value += (goal - b.value) * 0.25;
+          }
+          b.el.style.height = (b.value * 100).toFixed(1) + "%";
+        }
+        $("seek").style.width = ((position / DURATION) * 100).toFixed(2) + "%";
+        $("posLabel").textContent =
+          Math.floor(position / 60) + ":" + String(Math.floor(position % 60)).padStart(2, "0");
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+
+      /* Темы и эквалайзер — те же, что в приложении */
+      const THEMES = [
+        ["#5cd6b0", "Мягко-зелёная"], ["#3ddc84", "Зелёная"], ["#c3e84a", "Салатовая"],
+        ["#5b8dff", "Синяя"], ["#4dd0e1", "Голубая"], ["#b79cff", "Фиолетовая"],
+        ["#ff8fc0", "Розовая"], ["#a8c7fa", "Тёмная"], ["#a9c7ff", "Тёмно-серая"],
+        ["#cfd8ff", "Серая"], ["#e6e6e9", "Чёрная"], ["#415f91", "Светлая"],
+      ];
+      $("themes").innerHTML = THEMES.map(
+        ([c, n], i) => `<div class="theme ${i === 1 ? "is-active" : ""}"><div class="theme__dot" style="background:${c}"></div><span>${n}</span></div>`,
+      ).join("");
+
+      const BANDS = [[31, 9], [62, 8], [125, 6], [250, 3], [500, 1], [1000, 0], [2000, -1], [4000, 0], [8000, 2], [16000, 3]];
+      $("eq").innerHTML = BANDS.map(
+        ([f, g]) => `<div class="eq"><span class="eq__freq">${f >= 1000 ? f / 1000 + "к" : f} Гц</span><div class="eq__bar"><i style="left:${50 + g * 3.4}%"></i></div><span class="eq__gain">${g > 0 ? "+" + g : g}</span></div>`,
+      ).join("");
+
+      const TRACKS = [
+        ["Абоба (Slowed)", "зубы)", "Slowmotion", "2:04", "linear-gradient(150deg,#3ddc84,#12401f)"],
+        ["Rockefeller Street", "Getter Jaani", "Rockefeller Street", "2:34", "linear-gradient(150deg,#7c3aed,#2a1055)"],
+        ["Не спать", "алгоритм, драгонманов", "замкнутый код", "1:44", "linear-gradient(150deg,#b6ff3c,#3ddc84)"],
+        ["my perception", "sengoffline", "my perception", "2:07", "linear-gradient(150deg,#4dd0e1,#123c40)"],
+        ["Project X", "GLORY O'VISION", "CHIPGLORY", "2:18", "linear-gradient(150deg,#ff8fc0,#3d1530)"],
+      ];
+      function renderRows(list, currentFirst) {
+        $("rows").innerHTML = list
+          .map(
+            ([n, a, al, t, art], i) => `
+          <div class="row ${currentFirst && i === 0 ? "is-current" : ""}">
+            <div class="row__art" style="background:${art}"></div>
+            <div><div class="row__name">${n}</div><div class="row__artist">${a}</div></div>
+            <div class="row__album">${al}</div><div class="row__time">${t}</div><div></div>
+          </div>`,
+          )
+          .join("");
+      }
+      renderRows(TRACKS, true);
+
+      /* Курсор: нарисованный, двигается плавно и «нажимает» элементы */
+      let cx = -160;
+      let cy = 300;
+      function pointOf(el, dx = 0.5, dy = 0.5) {
+        const r = el.getBoundingClientRect();
+        const s = stage.getBoundingClientRect();
+        return {
+          x: r.left - s.left + r.width * dx,
+          y: r.top - s.top + r.height * dy,
+        };
+      }
+      async function moveTo(el, dx = 0.5, dy = 0.5, ms = 780) {
+        const p = pointOf(el, dx, dy);
+        cx = p.x;
+        cy = p.y;
+        $("cursor").style.transitionDuration = ms + "ms";
+        $("cursor").style.transform = `translate(${cx}px, ${cy}px)`;
+        await sleep(ms + 40);
+      }
+      async function tap(el, dx = 0.5, dy = 0.5) {
+        await moveTo(el, dx, dy, 700);
+        const p = pointOf(el, dx, dy);
+        const r = $("ripple");
+        r.style.left = p.x + "px";
+        r.style.top = p.y + "px";
+        r.classList.remove("is-on");
+        void r.offsetWidth;
+        r.classList.add("is-on");
+        $("cursor").classList.add("is-tap");
+        el.classList.add("is-pressed");
+        await sleep(130);
+        $("cursor").classList.remove("is-tap");
+        await sleep(110);
+        el.classList.remove("is-pressed");
+      }
+      async function type(el, text, speed = 90) {
+        el.textContent = "";
+        for (const ch of text) {
+          el.textContent += ch;
+          await sleep(speed);
+        }
+      }
+
+      const show = (el, on = true) => el.classList.toggle("is-on", on);
+      function caption(title, sub, small = false) {
+        const c = $("caption");
+        c.classList.remove("is-on");
+        c.classList.toggle("caption--small", small);
+        $("capTitle").textContent = title;
+        $("capSub").textContent = sub;
+        setTimeout(() => c.classList.add("is-on"), 110);
+      }
+      function page(id) {
+        // Уходящую страницу прячем мгновенно: при плавном затухании две
+        // страницы просвечивали друг через друга и выглядело грязно.
+        const ids = ["pageWave", "pagePlaylists", "pageList", "pageSettings"];
+        for (const p of ids) {
+          const el = $(p);
+          if (p === id) continue;
+          el.style.transition = "none";
+          el.classList.remove("is-on");
+        }
+        const active = $(id);
+        active.classList.add("is-on");
+        active.style.transition = "";
+        setTimeout(() => {
+          for (const p of ids) $(p).style.transition = "";
+        }, 80);
+      }
+      function rail(name) {
+        document.querySelectorAll(".rail__item").forEach((i) =>
+          i.classList.toggle("is-active", i.dataset.rail === name),
+        );
+      }
+      function playIcon(on) {
+        $("barPlay").innerHTML = on
+          ? '<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5h3v14H8zM13 5h3v14h-3z"/></svg>'
+          : '<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+      }
+
+      /* ── Сцены ────────────────────────────────────────────────────── */
+
+      async function resetAll() {
+        page("pageWave");
+        show($("splash"), false);
+        show($("footer"), false);
+        show($("trackMenu"), false);
+        show($("sheetNew"), false);
+        show($("sheetAdd"), false);
+        show($("toast"), false);
+        show($("pausedBadge"), false);
+        $("rail").classList.remove("is-open");
+        rail("wave");
+        $("caption").classList.remove("is-on");
+        playing = true;
+        position = 13;
+        playIcon(true);
+        $("search").classList.remove("is-focus");
+        $("searchText").textContent = "Поиск: треки, исполнители, альбомы";
+        renderRows(TRACKS, true);
+        $("listTitle").textContent = "Мне нравится";
+        $("listSub").textContent = "757 треков · 2055:23";
+        $("cursor").style.transitionDuration = "0ms";
+        $("cursor").style.transform = "translate(-160px, 300px)";
+        await sleep(60);
+      }
+
+      /* 1. Запуск */
+      async function sceneSplash() {
+        show($("splash"), true);
+        $("splashBar").classList.add("is-run");
+        await sleep(3600);
+        show($("splash"), false);
+        $("splashBar").classList.remove("is-run");
+        await sleep(420);
+      }
+
+      /* 2. Моя волна + раскрытие навигации */
+      async function sceneWave() {
+        caption("Моя волна", "включил — и дальше подбор идёт сам");
+        await sleep(4200);
+        await moveTo($("rail"), 0.5, 0.4, 800);
+        $("rail").classList.add("is-open");
+        caption("Навигация", "сайдбар раскрывается при наведении");
+        await sleep(2600);
+        $("rail").classList.remove("is-open");
+        await sleep(1200);
+      }
+
+      /* 3. Пауза: спектр и таймлайн замирают */
+      async function scenePause() {
+        caption("Пауза", "спектр и таймлайн встают вместе с треком");
+        await tap($("barPlay"));
+        playing = false;
+        playIcon(false);
+        show($("pausedBadge"), true);
+        await sleep(3400);
+        show($("pausedBadge"), false);
+        await tap($("barPlay"));
+        playing = true;
+        playIcon(true);
+        caption("Продолжаем", "трек играет с того же места");
+        await sleep(2400);
+      }
+
+      /* 4. Волна по треку */
+      async function sceneWaveByTrack() {
+        caption("Волна по треку", "подбор пойдёт от этого трека");
+        await tap($("barMore"));
+        show($("trackMenu"), true);
+        await sleep(900);
+        await tap($("menuWave"), 0.5, 0.5);
+        show($("trackMenu"), false);
+        await sleep(700);
+        caption("Готово", "трек доиграет — и дальше похожее", true);
+        await sleep(2400);
+      }
+
+      /* 5. Создание плейлиста */
+      async function sceneCreatePlaylist() {
+        await tap(document.querySelector('[data-rail="playlists"]'));
+        rail("playlists");
+        page("pagePlaylists");
+        caption("Создание плейлистов", "прямо в приложении, в один клик");
+        await sleep(2800);
+
+        await tap($("createBtn"));
+        show($("sheetNew"), true);
+        await sleep(800);
+        await tap($("newInput"), 0.4, 0.5);
+        await type($("newText"), "Для тренировки", 85);
+        await sleep(600);
+        await tap($("newBtn"));
+        show($("sheetNew"), false);
+        await sleep(500);
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="card__art" style="background: linear-gradient(150deg,#b6ff3c,#3ddc84)"></div>
+          <div class="card__name">Для тренировки</div>
+          <div class="card__meta">пустой</div>`;
+        $("plCards").appendChild(card);
+        await sleep(60);
+        card.classList.add("is-on");
+        caption("Плейлист создан", "сразу доступен и в Яндекс.Музыке", true);
+        await sleep(2600);
+      }
+
+      /* 6. Добавление трека + защита от повтора */
+      async function sceneAddTrack() {
+        caption("Добавление треков", "один клик — и трек уже в плейлисте");
+        await tap(document.querySelector('[data-rail="wave"]'));
+        rail("wave");
+        page("pageWave");
+        await sleep(1300);
+
+        await tap($("barMore"));
+        show($("trackMenu"), true);
+        await sleep(800);
+        await tap($("menuAdd"), 0.4, 0.5);
+        show($("trackMenu"), false);
+        await sleep(400);
+        show($("sheetAdd"), true);
+        await sleep(1000);
+
+        await tap($("rowNight"), 0.45, 0.5);
+        $("rowNight").querySelector(".plrow__meta").textContent = "трек уже здесь";
+        $("rowNight").querySelector(".plrow__mark").outerHTML =
+          '<svg class="plrow__mark" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m5 13 4 4L19 7"/></svg>';
+        await sleep(500);
+        show($("sheetAdd"), false);
+        show($("toast"), true);
+        caption("Второй раз не добавится", "приложение скажет, что трек уже здесь", true);
+        await sleep(3000);
+        show($("toast"), false);
+      }
+
+      /* 7. Поиск */
+      async function sceneSearch() {
+        caption("Поиск", "треки, исполнители, альбомы");
+        await tap($("search"), 0.22, 0.5);
+        $("search").classList.add("is-focus");
+        $("searchText").textContent = "";
+        await sleep(300);
+        await type($("searchText"), "не спать", 95);
+        await sleep(600);
+
+        page("pageList");
+        $("listTitle").textContent = "Найдено";
+        $("listSub").textContent = "треки, исполнители, альбомы";
+        renderRows(
+          [
+            ["Не спать", "алгоритм, драгонманов", "замкнутый код", "1:44", "linear-gradient(150deg,#b6ff3c,#3ddc84)"],
+            ["Не спать (Slowed)", "алгоритм", "single", "2:12", "linear-gradient(150deg,#3ddc84,#12401f)"],
+            ["Не спать до утра", "драгонманов", "альбом", "3:01", "linear-gradient(150deg,#7c3aed,#2a1055)"],
+          ],
+          false,
+        );
+        const rows = [...document.querySelectorAll("#rows .row")];
+        for (const row of rows) {
+          row.classList.add("is-on");
+          await sleep(180);
+        }
+        await sleep(1100);
+        await tap(rows[0]);
+        await sleep(600);
+        page("pageWave");
+        await sleep(1400);
+      }
+
+      /* 8. Настройки: темы и эквалайзер */
+      async function sceneSettings() {
+        await tap(document.querySelector('[data-rail="settings"]'));
+        rail("settings");
+        page("pageSettings");
+        caption("12 тем оформления", "от мягко-зелёной до чёрной");
+        await sleep(3000);
+        caption("Эквалайзер на 10 полос", "звук под свои наушники", true);
+        await sleep(3200);
+      }
+
+      /* 9. Финал: ссылки и Android */
+      async function sceneFinal() {
+        page("pageWave");
+        rail("wave");
+        caption("Coum Music", "форк Яндекс.Музыки", true);
+        show($("footer"), true);
+        await sleep(4600);
+        caption("Android — в разработке", "скоро и на телефоне", true);
+        await sleep(3200);
+        show($("footer"), false);
+      }
+
+      /* ── Прогон ───────────────────────────────────────────────────── */
+      let running = false;
+      async function play(loop = true) {
+        if (running) return;
+        running = true;
+        $("replay").classList.add("is-on");
+        $("hint").classList.add("is-hidden");
+        try {
+          do {
+            await resetAll();
+            await sceneSplash();
+            await sceneWave();
+            await scenePause();
+            await sceneWaveByTrack();
+            await sceneCreatePlaylist();
+            await sceneAddTrack();
+            await sceneSearch();
+            await sceneSettings();
+            await sceneFinal();
+          } while (loop);
+        } finally {
+          running = false;
+        }
+      }
+      const restart = () => {
+        running = false;
+        setTimeout(() => play(true), 60);
+      };
+      $("replay").addEventListener("click", restart);
+      addEventListener("keydown", (e) => {
+        if (["r", "R", "к", "К"].includes(e.key)) restart();
+      });
+      document.fonts.ready.then(() => setTimeout(() => play(true), 400));
+    </script>
+  </body>
+</html>

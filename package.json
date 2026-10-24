@@ -1,9 +1,9 @@
 {
   "name": "coum-music",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.0.1",
   "type": "module",
-  "description": "Coum Music вЂ” Р±С‹СЃС‚СЂС‹Р№ РјРёРЅРёРјР°Р»РёСЃС‚РёС‡РЅС‹Р№ РґРµСЃРєС‚РѕРї-РєР»РёРµРЅС‚ РЇРЅРґРµРєСЃ.РњСѓР·С‹РєРё: РњРѕСЏ РІРѕР»РЅР°, РїР»РµР№Р»РёСЃС‚С‹, РїРѕРёСЃРє.",
+  "description": "Coum Music — быстрый минималистичный десктоп-клиент Яндекс.Музыки: Моя волна, плейлисты, поиск.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -11,6 +11,9 @@
     "tauri": "tauri",
     "app:dev": "tauri dev",
     "app:build": "tauri build",
+    "android:init": "tauri android init",
+    "android:dev": "tauri android dev",
+    "android:build": "tauri android build --target aarch64",
     "release:pack": "powershell -ExecutionPolicy Bypass -File scripts/pack-release.ps1"
   },
   "dependencies": {

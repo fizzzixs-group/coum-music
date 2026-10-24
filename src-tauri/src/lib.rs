@@ -2,6 +2,7 @@
 
 mod commands;
 mod lyrics;
+mod mobile_login;
 mod state;
 mod stream_proxy;
 mod ym;
@@ -14,6 +15,13 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
         .manage(stream_proxy::StreamRegistry::default())
+        // На телефоне окно создаём сами: только так можно перехватить возврат
+        // со страницы входа и забрать токен автоматически.
+        .setup(|app| {
+            #[cfg(mobile)]
+            mobile_login::start_main_webview(app.handle().clone())?;
+            Ok(())
+        })
         // Аудио идёт через локальную схему: так работают эквалайзер и визуализатор.
         .register_asynchronous_uri_scheme_protocol(stream_proxy::SCHEME, stream_proxy::handle)
         .invoke_handler(tauri::generate_handler![
@@ -26,6 +34,8 @@ pub fn run() {
             commands::search,
             commands::liked,
             commands::artist_tracks,
+            commands::artist,
+            commands::album_tracks,
             commands::set_like,
             commands::wave,
             commands::wave_feedback,
@@ -38,6 +48,9 @@ pub fn run() {
             commands::check_update,
             commands::create_playlist,
             commands::playlist_add_track,
+            commands::playlist_remove_track,
+            commands::playlist_rename,
+            commands::playlist_delete,
         ])
         .run(tauri::generate_context!())
         .expect("не удалось запустить Coum Music");

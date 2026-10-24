@@ -8,6 +8,7 @@ import {
   IconNext,
   IconPause,
   IconPlay,
+  IconPlus,
   IconPrev,
   IconSparkle,
   IconVolume,
@@ -17,11 +18,13 @@ import {
 import { Menu, type MenuEntry } from "@/components/Menu";
 import { QueuePopover } from "@/components/QueuePopover";
 import { Slider } from "@/components/Slider";
+import { WaveSlider } from "@/components/WaveSlider";
 import { Visualizer } from "@/components/Visualizer";
-import { formatSeconds } from "@/lib/format";
+import { formatSeconds, shownDuration } from "@/lib/format";
 import { useLibrary } from "@/store/library";
 import { useNav } from "@/store/nav";
 import { usePlayer } from "@/store/player";
+import { useUi } from "@/store/ui";
 
 /**
  * «Моя волна» — это и есть режим «сейчас играет»: обложка, живой спектр и
@@ -49,6 +52,7 @@ export function WaveView() {
   const seedWaveFromTrack = usePlayer((s) => s.seedWaveFromTrack);
   const toggleLike = usePlayer((s) => s.toggleLike);
   const enqueue = usePlayer((s) => s.enqueue);
+  const openPlaylistPicker = useUi((s) => s.openPlaylistPicker);
 
   const go = useNav((s) => s.go);
   const track = queue[index] ?? null;
@@ -57,7 +61,7 @@ export function WaveView() {
   const [queueOpen, setQueueOpen] = useState<{ x: number; y: number } | null>(null);
   const [scrub, setScrub] = useState<number | null>(null);
 
-  const duration = realDuration > 0 ? realDuration : (track?.durationMs ?? 0) / 1000;
+  const duration = shownDuration(realDuration, track?.durationMs ?? 0);
   const shown = scrub ?? position;
   const VolumeIcon = muted || volume === 0 ? IconVolumeMute : volume < 0.5 ? IconVolumeLow : IconVolume;
 
@@ -97,6 +101,12 @@ export function WaveView() {
       icon: <IconNext size={18} />,
       onSelect: () => enqueue(track),
     },
+    {
+      id: "playlist",
+      title: "Добавить в плейлист",
+      icon: <IconPlus size={18} />,
+      onSelect: () => openPlaylistPicker(track),
+    },
     "sep",
     {
       id: "like",
@@ -124,7 +134,7 @@ export function WaveView() {
             const rect = e.currentTarget.getBoundingClientRect();
             setQueueOpen({ x: rect.left, y: rect.bottom + 8 });
           }}
-          title="Показать очередь"
+          title={source?.kind === "playlist" ? "Открыть плейлист" : "Показать очередь"}
         >
           <IconSparkle size={13} />
           <span>{label}</span>
@@ -178,7 +188,19 @@ export function WaveView() {
             )}
           </div>
 
-          {track.album && <div className="now__album">{track.album}</div>}
+          {track.album && (
+            <button
+              className="now__album now__album--link"
+              disabled={!track.albumId}
+              onClick={() =>
+                track.albumId &&
+                go({ name: "album", id: track.albumId, title: track.album ?? "" })
+              }
+              title="Открыть альбом"
+            >
+              {track.album}
+            </button>
+          )}
 
           {/* Спектр ровно по ширине обложки — чтобы всё было по одной оси. */}
           <Visualizer className="now__viz" bars={10} height={92} />
@@ -187,7 +209,7 @@ export function WaveView() {
 
       <div className="now__timeline">
         <span className="now__time">{formatSeconds(shown)}</span>
-        <Slider
+        <WaveSlider
           ariaLabel="Позиция трека"
           value={shown}
           max={duration || 1}

@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   Account,
+  Artist,
   Lyrics,
   Playlist,
   PlaylistDetail,
@@ -28,6 +29,10 @@ export const api = {
   liked: () => invoke<Track[]>("liked"),
   artistTracks: (artistId: string, page = 0) =>
     invoke<Track[]>("artist_tracks", { artistId, page }),
+  /** Карточка исполнителя: имя и аватар. */
+  artist: (artistId: string) => invoke<Artist>("artist", { artistId }),
+  /** Все треки альбома. */
+  albumTracks: (albumId: string) => invoke<Track[]>("album_tracks", { albumId }),
   setLike: (trackId: string, like: boolean) => invoke<void>("set_like", { trackId, like }),
 
   wave: (station?: string, queue?: string) =>
@@ -75,6 +80,14 @@ export const api = {
   /** Положить трек в плейлист. */
   playlistAddTrack: (kind: number, trackId: string, albumId: string | null) =>
     invoke<void>("playlist_add_track", { kind, trackId, albumId }),
+  /** Переименовать плейлист. */
+  playlistRename: (kind: number, title: string) =>
+    invoke<void>("playlist_rename", { kind, title }),
+  /** Удалить плейлист целиком. */
+  playlistDelete: (kind: number) => invoke<void>("playlist_delete", { kind }),
+  /** Убрать трек из плейлиста. */
+  playlistRemoveTrack: (kind: number, trackId: string) =>
+    invoke<void>("playlist_remove_track", { kind, trackId }),
 };
 
 export const events = {

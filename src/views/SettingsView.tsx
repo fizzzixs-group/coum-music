@@ -14,6 +14,7 @@ import {
 import { EQ_FREQS, EQ_PRESETS, EQ_RANGE, useEqualizer } from "@/store/equalizer";
 import { useLibrary } from "@/store/library";
 import { THEMES, useTheme } from "@/store/theme";
+import { renderNotes } from "@/lib/markdown";
 
 const TELEGRAM_URL = "https://t.me/coumfun";
 
@@ -227,6 +228,9 @@ export function SettingsView() {
             <div className="settings__row-text">
               <div className="settings__row-title">Coum Music {__APP_VERSION__}</div>
               <div className="settings__row-sub">неофициальный клиент Яндекс.Музыки</div>
+              <div className="settings__beta">
+                Экспериментальная версия: некоторые функции могут работать некорректно
+              </div>
             </div>
             <button className="btn-ghost" disabled={checking} onClick={() => void checkUpdates()}>
               {checking ? "Проверяю…" : "Проверить обновления"}
@@ -275,7 +279,7 @@ export function SettingsView() {
               {update.notes.trim() && (
                 <details className="update__notes" open>
                   <summary>Что изменилось</summary>
-                  <pre className="update__notes-text">{update.notes.trim()}</pre>
+                  <div className="update__notes-text">{renderNotes(update.notes)}</div>
                 </details>
               )}
             </div>

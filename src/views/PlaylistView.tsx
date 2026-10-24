@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 
 import { api, humanError } from "@/api/backend";
-import type { PlaylistDetail } from "@/api/types";
+import type { PlaylistDetail, Track } from "@/api/types";
 import { Cover } from "@/components/Cover";
-import { IconPlay } from "@/components/Icons";
+import { IconPlay, IconTrash } from "@/components/Icons";
 import { TrackList } from "@/components/TrackList";
 import { formatTime, plural, trackCount } from "@/lib/format";
+import { useLibrary } from "@/store/library";
 import { usePlayer } from "@/store/player";
 import type { Route } from "@/store/nav";
 
@@ -15,7 +16,29 @@ export function PlaylistView({ route }: Props) {
   const [data, setData] = useState<PlaylistDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const playTracks = usePlayer((s) => s.playTracks);
+  const setNotice = usePlayer((s) => s.setNotice);
+
+  // Удаляем трек: сначала убираем его из списка, потом сообщаем серверу.
+  // Если сервер откажет — возвращаем список назад и показываем ошибку.
+  const removeTrack = async (track: Track) => {
+    if (busy || !data) return;
+    setBusy(true);
+    const backup = data;
+    setData({ ...data, tracks: data.tracks.filter((t) => t.id !== track.id) });
+
+    try {
+      await api.playlistRemoveTrack(route.kind, track.id);
+      setNotice(`«${track.title}» убрали из плейлиста`);
+      void useLibrary.getState().refreshPlaylists();
+    } catch (e) {
+      setData(backup);
+      setError(humanError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +150,19 @@ export function PlaylistView({ route }: Props) {
             kind_: playlist.kind,
             title: playlist.title,
           })
+        }
+        menuExtra={
+          playlist.isMine
+            ? (track) => [
+                {
+                  id: "remove-from-playlist",
+                  title: "Удалить из плейлиста",
+                  danger: true,
+                  icon: <IconTrash size={18} />,
+                  onSelect: () => void removeTrack(track),
+                },
+              ]
+            : undefined
         }
       />
     </div>

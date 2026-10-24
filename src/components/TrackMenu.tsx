@@ -1,27 +1,27 @@
-import { useState } from "react";
-
 import type { Track } from "@/api/types";
 import { useLibrary } from "@/store/library";
 import { usePlayer } from "@/store/player";
+import { useUi } from "@/store/ui";
 import { IconHeart, IconPlay, IconPlus, IconQueue, IconWave } from "./Icons";
 import { Menu, type MenuEntry } from "./Menu";
-import { PlaylistDialog } from "./PlaylistDialog";
 
 type Props = {
   track: Track;
   x: number;
   y: number;
   onClose: () => void;
+  /** Дополнительные пункты — например «Удалить из плейлиста». */
+  extra?: MenuEntry[];
 };
 
-/** Меню трека: обычное воспроизведение, волна по треку, очередь, избранное. */
-export function TrackMenu({ track, x, y, onClose }: Props) {
+/** Меню трека: воспроизведение, волна по треку, очередь, плейлист, избранное. */
+export function TrackMenu({ track, x, y, onClose, extra = [] }: Props) {
   const playTracks = usePlayer((s) => s.playTracks);
   const seedWaveFromTrack = usePlayer((s) => s.seedWaveFromTrack);
   const enqueue = usePlayer((s) => s.enqueue);
   const liked = useLibrary((s) => s.likedIds.has(track.id));
   const toggleLike = useLibrary((s) => s.toggleLike);
-  const [picker, setPicker] = useState(false);
+  const openPlaylistPicker = useUi((s) => s.openPlaylistPicker);
 
   const entries: MenuEntry[] = [
     {
@@ -48,8 +48,9 @@ export function TrackMenu({ track, x, y, onClose }: Props) {
       id: "playlist",
       title: "Добавить в плейлист",
       icon: <IconPlus size={18} />,
-      onSelect: () => setPicker(true),
+      onSelect: () => openPlaylistPicker(track),
     },
+    ...extra,
     "sep",
     {
       id: "like",
@@ -60,10 +61,5 @@ export function TrackMenu({ track, x, y, onClose }: Props) {
     },
   ];
 
-  return (
-    <>
-      {!picker && <Menu x={x} y={y} entries={entries} onClose={onClose} />}
-      {picker && <PlaylistDialog track={track} onClose={onClose} />}
-    </>
-  );
+  return <Menu x={x} y={y} entries={entries} onClose={onClose} />;
 }

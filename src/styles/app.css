@@ -11,8 +11,12 @@
   background: var(--surface);
 }
 
-/* Всё, кроме свечения, лежит выше него. */
-.app > *:not(.app__glow) {
+/* Всё, кроме свечения и всплывающих слоёв, лежит выше свечения.
+   Их трогать нельзя: у них своё позиционирование, и это правило раньше
+   перебивало `position: fixed` — диалог «прилипал» к странице вместо
+   всплытия, а нижняя панель на телефоне висела посреди экрана вместо
+   того, чтобы прижаться к низу. */
+.app > *:not(.app__glow):not(.modal):not(.wallpaper):not(.bottom-nav) {
   position: relative;
   z-index: 1;
 }
@@ -29,14 +33,34 @@
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 200;
   display: grid;
   place-items: center;
   padding: 24px;
   background: color-mix(in oklab, var(--scrim) 62%, transparent);
   animation: fade 0.15s var(--ease);
+  overflow-y: auto;
+}
+.modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: transparent;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+}
+.modal__close:hover {
+  background: var(--surface-3);
+  color: var(--on-surface);
 }
 .modal__card {
+  position: relative;
   width: min(460px, 100%);
   max-height: 84vh;
   overflow-y: auto;
@@ -127,7 +151,15 @@
   background: var(--surface-3);
 }
 .modal__playlist:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
+}
+/* Трек уже в этом плейлисте — строка неактивна, но читается. */
+.modal__playlist[data-already="true"]:disabled {
+  opacity: 1;
+  color: var(--on-surface-variant);
+}
+.modal__playlist[data-already="true"] .modal__playlist-name {
+  color: var(--on-surface-variant);
 }
 .modal__cover {
   width: 42px;
@@ -231,16 +263,51 @@
 }
 .update__notes-text {
   margin: 10px 0 0;
-  padding: 12px 14px;
-  max-height: 240px;
+  padding: 14px 16px;
+  max-height: 260px;
   overflow: auto;
   border-radius: var(--r-sm);
   background: var(--surface);
-  font-family: inherit;
   font-size: 12px;
-  line-height: 1.55;
-  white-space: pre-wrap;
-  word-break: break-word;
+  line-height: 1.6;
+  color: var(--on-surface-variant);
+}
+.update__notes-text b {
+  color: var(--on-surface);
+}
+.update__notes-text code {
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--on-surface);
+}
+.update__notes-head {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--on-surface);
+}
+.update__notes-head:first-child {
+  margin-top: 0;
+}
+.update__notes-line {
+  margin: 0 0 6px;
+}
+.update__list {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.update__list li::marker {
+  color: var(--primary);
+}
+.update__link {
+  color: var(--primary);
 }
 
 /* ── Очередь в миниатюре ────────────────────────────────────────────── */
@@ -358,6 +425,201 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ── Телефон ────────────────────────────────────────────────────────────
+   Отдельная раскладка, а не сжатая настольная: навигация уезжает вниз,
+   альбом из списка треков убирается, обложка считается от ширины экрана. */
+
+[data-mobile="true"] {
+  /* Место под нижнюю навигацию: она висит поверх и иначе закрыла бы плеер. */
+  padding-bottom: calc(82px + env(safe-area-inset-bottom));
+  padding-top: env(safe-area-inset-top);
+}
+[data-mobile="true"] .body {
+  grid-template-columns: 1fr;
+  padding-bottom: 0;
+}
+[data-mobile="true"] .titlebar {
+  padding: 0 14px;
+  gap: 12px;
+}
+[data-mobile="true"] .brand__name {
+  display: none;
+}
+[data-mobile="true"] .search-field {
+  flex: 1;
+}
+
+/* Панель навигации снизу — «таблетка» с крупными зонами нажатия. */
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+.bottom-nav__pill {
+  pointer-events: auto;
+  display: flex;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 28px;
+  background: color-mix(in oklab, var(--surface-container, var(--surface-2)) 94%, transparent);
+  box-shadow: var(--elev-2);
+  backdrop-filter: blur(20px);
+}
+.bottom-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 74px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.18s var(--ease),
+    color 0.18s var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.bottom-nav__item[data-active="true"] {
+  background: var(--secondary-container, var(--surface-4));
+  color: var(--on-secondary-container, var(--on-surface));
+}
+.bottom-nav__icon {
+  display: grid;
+  place-items: center;
+}
+
+/* Экран плеера: обложка от ширины экрана, а не от высоты окна. */
+[data-mobile="true"] .now__cover {
+  width: min(74vw, 320px);
+}
+[data-mobile="true"] .now__header {
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 16px;
+  height: auto;
+  min-height: var(--titlebar-h);
+}
+[data-mobile="true"] .now__badge {
+  max-width: 100%;
+  font-size: 11px;
+}
+[data-mobile="true"] .now__title {
+  font-size: 24px;
+}
+[data-mobile="true"] .now__body {
+  padding: 8px 16px 0;
+}
+[data-mobile="true"] .now__timeline,
+[data-mobile="true"] .now__controls {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* Страницы плейлиста и исполнителя: обложка сверху, текст под ней. */
+[data-mobile="true"] .page-head {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 18px 14px;
+}
+[data-mobile="true"] .page-head__cover {
+  width: 132px;
+  height: 132px;
+}
+[data-mobile="true"] .page-head__title {
+  font-size: 26px;
+}
+[data-mobile="true"] .search-view,
+[data-mobile="true"] .view {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* В списке треков на телефоне нет места под альбом. */
+[data-mobile="true"] .tracklist__head,
+[data-mobile="true"] .track-row {
+  grid-template-columns: 44px 1fr 52px 40px 36px;
+}
+[data-mobile="true"] .tracklist__head > :nth-child(3),
+[data-mobile="true"] .track-row > :nth-child(3) {
+  display: none;
+}
+[data-mobile="true"] .track-row {
+  height: 56px;
+}
+
+/* Нижний плеер компактнее и в одну строку поменьше. */
+[data-mobile="true"] .player {
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 0 14px;
+}
+[data-mobile="true"] .player__volume {
+  display: none;
+}
+
+/* Диалоги — почти на всю ширину экрана. */
+[data-mobile="true"] .modal {
+  padding: 16px;
+  align-items: end;
+}
+[data-mobile="true"] .modal__card {
+  width: 100%;
+  max-height: 88vh;
+  border-radius: 26px;
+}
+
+/* Экран входа: карточка бывает выше экрана, поэтому прокручиваем её, а не
+   обрезаем. `safe center` центрирует, пока влезает, и прижимает к верху,
+   когда не влезает. */
+[data-mobile="true"] .login {
+  place-items: safe center;
+  overflow-y: auto;
+  padding: 16px;
+}
+[data-mobile="true"] .login__card {
+  padding: 24px 18px;
+  border-radius: 24px;
+}
+[data-mobile="true"] .login__mark {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 16px;
+  border-radius: 18px;
+  font-size: 24px;
+}
+[data-mobile="true"] .login__title {
+  font-size: 24px;
+}
+[data-mobile="true"] .login__text {
+  margin-bottom: 18px;
+}
+[data-mobile="true"] .login__version {
+  margin-top: 18px;
+  font-size: 11px;
+  color: var(--on-surface-variant);
+  opacity: 0.8;
+}
+
+/* Текст подсказки на телефоне мелкий и переносится по словам: адрес длинный. */
+[data-mobile="true"] .login__hint,
+[data-mobile="true"] .login__hint code {
+  word-break: break-all;
+  font-size: 11px;
 }
 
 /* ── Свой фон окна ──────────────────────────────────────────────────── */
@@ -895,9 +1157,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  /* Раньше здесь был flex, и многоточие не работало: у flex-контейнера
+     текст не обрезается. Индикатор играющего трека встаёт в строку. */
+  display: block;
+}
+.track-row__title .eq {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-right: 8px;
 }
 .track-row__artist {
   font-size: 12.5px;
@@ -2127,27 +2394,920 @@
   text-align: center;
 }
 
+/* Узкое окно на компьютере: обложка слева, текст справа.
+   Для телефона это не годится — там своя раскладка ниже, поэтому исключаем. */
 @media (max-width: 940px) {
-  .now__body {
+  .app:not([data-mobile="true"]) .now__body {
     grid-template-columns: 1fr;
     gap: 18px;
     padding: 12px 24px 0;
   }
-  .now__side {
+  .app:not([data-mobile="true"]) .now__side {
     flex-direction: row;
     align-items: center;
     gap: 18px;
     justify-content: flex-start;
   }
-  .now__cover {
+  .app:not([data-mobile="true"]) .now__cover {
     width: 104px;
     flex-shrink: 0;
   }
-  .now__title {
+  .app:not([data-mobile="true"]) .now__title {
     margin-top: 0;
   }
-  .now__viz {
+  .app:not([data-mobile="true"]) .now__viz {
     margin: 0 24px;
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   МОБИЛЬНЫЙ ИНТЕРФЕЙС
+
+   Это не сжатая настольная версия, а отдельная раскладка: блоки стоят
+   друг под другом, зоны нажатия рассчитаны на палец, ничего не выезжает
+   за края экрана. Правила идут последними и потому перекрывают настольные.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Экран «сейчас играет» ───────────────────────────────────────────── */
+
+[data-mobile="true"] .now__body {
+  grid-template-columns: 1fr;
+  padding: 2px 18px 0;
+  overflow-x: hidden;
+}
+[data-mobile="true"] .now__side {
+  /* Обложка, название и спектр — строго друг под другом по центру. */
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  width: 100%;
+  flex-shrink: 1;
+}
+[data-mobile="true"] .now__cover {
+  width: min(74vw, 330px);
+  max-width: 100%;
+}
+[data-mobile="true"] .now__title {
+  margin: 18px 0 4px;
+  font-size: 21px;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  /* Длинное название — не больше двух строк, дальше многоточие. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+[data-mobile="true"] .now__artists {
+  max-width: 100%;
+  row-gap: 2px;
+}
+[data-mobile="true"] .now__artist-link,
+[data-mobile="true"] .now__artist {
+  font-size: 14px;
+}
+[data-mobile="true"] .now__album {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-mobile="true"] .now__viz {
+  width: min(100%, 330px);
+  margin: 14px auto 0;
+}
+
+/* Шапка плеера: плашка источника занимает строку, громкость уходит под неё. */
+[data-mobile="true"] .now__header {
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 10px;
+  padding: 8px 16px 0;
+  min-height: 0;
+  height: auto;
+}
+[data-mobile="true"] .now__badge {
+  max-width: 100%;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 11px;
+}
+[data-mobile="true"] .now__header-right {
+  width: 100%;
+  justify-content: center;
+  gap: 10px;
+}
+[data-mobile="true"] .now__volume {
+  flex: 1;
+  max-width: 220px;
+}
+
+/* Таймлайн и кнопки: крупнее и с отступами от краёв. */
+[data-mobile="true"] .now__timeline {
+  padding: 6px 18px 0;
+}
+[data-mobile="true"] .now__controls {
+  padding: 10px 18px 18px;
+  gap: 12px;
+}
+[data-mobile="true"] .round-btn {
+  width: 46px;
+  height: 46px;
+}
+[data-mobile="true"] .round-btn--sm {
+  width: 50px;
+  height: 50px;
+}
+[data-mobile="true"] .round-btn--play {
+  width: 64px;
+  height: 64px;
+}
+
+/* ── Эквалайзер: список строк вместо десяти столбиков ────────────────────
+   В ряд десять ползунков на телефоне не помещаются: подписи срезаются,
+   а попасть пальцем в узкий столбик невозможно. Поэтому каждая полоса —
+   строка: частота слева, ползунок во всю ширину, значение справа. */
+
+[data-mobile="true"] .eq-grid {
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding-top: 2px;
+}
+[data-mobile="true"] .eq-grid__band {
+  display: grid;
+  grid-template-columns: 52px 1fr 46px;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 0;
+  min-height: 46px;
+}
+[data-mobile="true"] .eq-grid__freq {
+  grid-area: 1 / 1;
+  text-align: left;
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+[data-mobile="true"] .eq-grid__slider-wrap {
+  grid-area: 1 / 2;
+  display: block;
+  height: auto;
+}
+[data-mobile="true"] .eq-grid__slider {
+  /* Снимаем поворот: здесь ползунок снова горизонтальный и во всю строку. */
+  transform: none;
+  width: 100%;
+  height: 42px;
+}
+[data-mobile="true"] .eq-grid__gain {
+  grid-area: 1 / 3;
+  min-height: 0;
+  text-align: right;
+  font-size: 12.5px;
+  color: var(--on-surface);
+}
+[data-mobile="true"] .eq-grid .slider__track {
+  height: 8px;
+}
+[data-mobile="true"] .eq-grid .slider__knob {
+  width: 18px;
+  height: 18px;
+}
+[data-mobile="true"] .eq-grid .slider[data-dragging="true"] .slider__knob {
+  width: 26px;
+  height: 26px;
+}
+
+/* ── Общие мелочи для телефона ───────────────────────────────────────── */
+
+[data-mobile="true"] .settings__section {
+  padding: 18px 16px;
+  border-radius: 22px;
+}
+[data-mobile="true"] .settings__section-title {
+  font-size: 16px;
+}
+[data-mobile="true"] .btn-primary,
+[data-mobile="true"] .btn-ghost {
+  min-height: 44px;
+}
+
+/* Кнопки в списке треков: палец не должен попадать в две сразу. */
+[data-mobile="true"] .track-row {
+  height: 60px;
+  gap: 6px;
+}
+[data-mobile="true"] .track-row__action {
+  width: 40px;
+  height: 40px;
+}
+[data-mobile="true"] .track-row__title {
+  font-size: 14px;
+}
+[data-mobile="true"] .track-row__artist {
+  font-size: 12px;
+}
+
+/* Страницы: чуть меньше воздуха по краям, крупнее заголовки. */
+[data-mobile="true"] .search-view__title,
+[data-mobile="true"] .page-head__title {
+  font-size: 26px;
+}
+[data-mobile="true"] .card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* Отклик на нажатие вместо наведения: курсора на телефоне нет. */
+[data-mobile="true"] .card:active,
+[data-mobile="true"] .track-row:active,
+[data-mobile="true"] .bottom-nav__item:active {
+  background: var(--surface-3);
+}
+
+/* Плеер на телефоне: полоса прокрутки не нужна — содержимое должно влезать.
+   Если экран совсем низкий, прокрутка остаётся, но без видимой полосы. */
+[data-mobile="true"] .now__body {
+  scrollbar-width: none;
+}
+[data-mobile="true"] .now__body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+[data-mobile="true"] .now__cover {
+  width: min(68vw, 300px);
+}
+[data-mobile="true"] .now__viz {
+  width: min(100%, 300px);
+  margin-top: 12px;
+}
+
+/* ── Строки списка и кнопки на телефоне ────────────────────────────────
+   Длительность переезжает в строку с названием: отдельная колонка съедала
+   ширину, и названия треков обрезались на середине слова. */
+
+[data-mobile="true"] .tracklist__head,
+[data-mobile="true"] .track-row {
+  grid-template-columns: 46px 1fr 40px 38px;
+  column-gap: 8px;
+}
+[data-mobile="true"] .tracklist__head > :nth-child(3),
+[data-mobile="true"] .track-row > :nth-child(3) {
+  display: none; /* альбом */
+}
+[data-mobile="true"] .track-row__text {
+  grid-column: 2;
+  grid-row: 1;
+  padding-right: 52px; /* место под длительность */
+}
+[data-mobile="true"] .track-row__time {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  justify-self: end;
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+[data-mobile="true"] .track-row > button:nth-of-type(1) {
+  grid-column: 3;
+}
+[data-mobile="true"] .track-row > button:nth-of-type(2) {
+  grid-column: 4;
+}
+[data-mobile="true"] .tracklist__head > :nth-child(4) {
+  display: none;
+}
+
+/* Кнопки действий на телефоне — во всю ширину и друг под другом:
+   так в них легко попасть пальцем. */
+[data-mobile="true"] .view__actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+[data-mobile="true"] .view__actions .btn-primary,
+[data-mobile="true"] .view__actions .btn-ghost {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ── Кнопки в строках треков на телефоне ──────────────────────────────
+   На настольной версии они появляются при наведении курсора. На телефоне
+   наведения нет, поэтому «три точки» были не видны вообще — меню трека
+   открыть было нечем. Показываем их всегда и даём названию больше места. */
+
+[data-mobile="true"] .track-row__action {
+  opacity: 1;
+  width: 38px;
+  height: 38px;
+}
+[data-mobile="true"] .tracklist__head,
+[data-mobile="true"] .track-row {
+  grid-template-columns: 42px 1fr 38px 38px;
+  column-gap: 6px;
+}
+[data-mobile="true"] .track-row__text {
+  padding-right: 44px;
+}
+
+/* ── Всплывающие слои на телефоне ─────────────────────────────────────
+   Меню и очередь не должны вылезать за края узкого экрана. */
+
+[data-mobile="true"] .menu {
+  max-width: calc(100vw - 16px);
+}
+[data-mobile="true"] .queue-pop {
+  width: calc(100vw - 16px);
+}
+[data-mobile="true"] .queue-pop__list {
+  max-height: 46vh;
+}
+[data-mobile="true"] .menu__item {
+  min-height: 52px; /* палец должен попадать без прицеливания */
+}
+
+/* Название плейлиста в очереди — ссылка на сам плейлист. */
+.queue-pop__title--link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s var(--ease);
+}
+.queue-pop__title--link:hover {
+  text-decoration-color: var(--primary);
+}
+
+/* Подгрузка остатка длинного списка. */
+.tracklist__more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 0 28px;
+}
+.tracklist__more-count {
+  font-size: 11.5px;
+  color: var(--on-surface-variant);
+}
+
+/* ═══ Телефон: безопасные зоны и место под плеер ═══════════════════════
+   Сверху — строка состояния, снизу — полоса жестов. Плюс панель навигации
+   висит поверх окна, поэтому под неё и под плеер нужно оставить место:
+   раньше отступа не хватало, и панель накрывала кнопки плеера. */
+
+.app[data-mobile="true"] {
+  grid-template-rows: 56px 1fr auto;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: calc(var(--player-h) + 104px + env(safe-area-inset-bottom, 0px));
+}
+[data-mobile="true"] .titlebar {
+  height: 56px;
+  padding: 0 14px;
+}
+[data-mobile="true"] .search-field {
+  height: 42px;
+  font-size: 14px;
+}
+[data-mobile="true"] .bottom-nav {
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Панель навигации не должна перекрывать кнопки плеера. */
+[data-mobile="true"] .player {
+  margin-bottom: 8px;
+}
+
+/* ═══ Телефон: компактный мини-плеер ═══════════════════════════════════
+   Настольная панель из трёх колонок на телефоне превращалась в кашу:
+   кнопки, таймлайн и громкость наезжали друг на друга. Здесь это узкая
+   строка над навигацией: обложка, название, играть и «дальше».
+   Тап по строке открывает полноэкранный плеер. */
+
+.app[data-mobile="true"] .player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 64px;
+  margin: 0 10px 10px;
+  padding: 0 10px 0 8px;
+  border-radius: 20px;
+  grid-template-columns: none;
+}
+[data-mobile="true"] .player__now {
+  flex: 1;
+  min-width: 0;
+  gap: 10px;
+}
+[data-mobile="true"] .player__cover {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+}
+[data-mobile="true"] .player__title {
+  font-size: 13.5px;
+}
+[data-mobile="true"] .player__artist {
+  font-size: 11.5px;
+}
+[data-mobile="true"] .player__timeline,
+[data-mobile="true"] .player__right {
+  display: none;
+}
+[data-mobile="true"] .player__center {
+  flex: 0 0 auto;
+}
+[data-mobile="true"] .player__buttons {
+  gap: 2px;
+}
+/* В мини-плеере достаточно «играть» и «дальше». */
+[data-mobile="true"] .player__buttons .player__control:first-child {
+  display: none;
+}
+[data-mobile="true"] .player__control {
+  width: 40px;
+  height: 40px;
+}
+[data-mobile="true"] .player__control--play {
+  width: 48px;
+  height: 48px;
+}
+/* Кнопка «лайк» рядом с обложкой на телефоне тоже лишняя. */
+[data-mobile="true"] .player__now .track-row__action {
+  display: none;
+}
+
+/* ═══ Телефон: доводка экранов ═════════════════════════════════════════ */
+
+/* Громкость на телефоне лишняя: звук регулируют кнопки устройства,
+   а строка с ползунком только отнимала место у обложки. */
+[data-mobile="true"] .now__header-right {
+  display: none;
+}
+[data-mobile="true"] .now__header {
+  justify-content: center;
+  padding-top: 4px;
+}
+
+/* Настройки: текст и кнопка не влезают в одну строку — ставим в столбик,
+   иначе кнопка наезжает на описание (это было видно в «О приложении»). */
+[data-mobile="true"] .settings__row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px 0;
+}
+[data-mobile="true"] .settings__row-text {
+  max-width: 100%;
+}
+[data-mobile="true"] .settings__row .btn-ghost,
+[data-mobile="true"] .settings__row .btn-primary {
+  width: 100%;
+  justify-content: center;
+}
+[data-mobile="true"] .settings__row-title {
+  font-size: 14px;
+}
+[data-mobile="true"] .settings__row-sub {
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+/* Пресеты эквалайзера: ровная сетка в три колонки вместо разбросанных чипов. */
+[data-mobile="true"] .eq-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+[data-mobile="true"] .eq-presets > * {
+  justify-content: center;
+  width: 100%;
+}
+
+/* Спектр на телефоне: обложка ужимается, чтобы столбикам осталось место. */
+[data-mobile="true"] .now__cover {
+  width: min(62vw, 280px);
+}
+[data-mobile="true"] .now__viz {
+  width: min(100%, 280px);
+  margin-top: 10px;
+}
+[data-mobile="true"] .now__timeline {
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   МОБИЛЬНАЯ РАСКЛАДКА (перекрывает настольные правила)
+
+   Здесь не «сжатие», а другие пропорции и другой порядок элементов:
+   крупная обложка, текст под ней, спектр по центру, управление прижато
+   к низу над навигацией.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Экран «сейчас играет» ─────────────────────────────────────────── */
+[data-mobile="true"] .now {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+[data-mobile="true"] .now__header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: auto;
+  padding: 8px 14px 0;
+  flex-shrink: 0;
+}
+[data-mobile="true"] .now__badge {
+  height: 32px;
+  padding: 0 14px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+}
+[data-mobile="true"] .now__body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  overflow: hidden;
+  min-height: 0;
+}
+[data-mobile="true"] .now__side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  gap: 0;
+  flex-direction: column !important;
+}
+[data-mobile="true"] .now__cover {
+  width: min(74vw, 320px);
+  max-width: 100%;
+  border-radius: 24px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+}
+[data-mobile="true"] .now__title {
+  margin: 16px 0 0;
+  font-size: 23px;
+  line-height: 1.15;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+[data-mobile="true"] .now__artists {
+  margin-top: 5px;
+  max-width: 100%;
+}
+[data-mobile="true"] .now__artist-link,
+[data-mobile="true"] .now__artist {
+  font-size: 14.5px;
+}
+[data-mobile="true"] .now__album {
+  margin-top: 2px;
+  font-size: 11.5px;
+}
+[data-mobile="true"] .now__viz {
+  width: min(100%, 320px);
+  margin: 12px auto 0;
+  height: 74px;
+}
+[data-mobile="true"] .now__timeline {
+  padding: 0 18px;
+  margin: 0;
+  flex-shrink: 0;
+}
+[data-mobile="true"] .now__controls {
+  padding: 8px 18px 14px;
+  gap: 14px;
+  flex-shrink: 0;
+}
+[data-mobile="true"] .round-btn {
+  width: 46px;
+  height: 46px;
+}
+[data-mobile="true"] .round-btn--sm {
+  width: 48px;
+  height: 48px;
+}
+[data-mobile="true"] .round-btn--play {
+  width: 66px;
+  height: 66px;
+}
+
+/* ── Настройки: карточки во всю ширину ─────────────────────────────── */
+[data-mobile="true"] .settings__section {
+  margin: 0 0 14px;
+  padding: 18px 16px;
+  border-radius: 22px;
+}
+[data-mobile="true"] .settings__section-title {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+[data-mobile="true"] .settings__hint {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* ── Списки: ровные строки под палец ───────────────────────────────── */
+[data-mobile="true"] .track-row {
+  height: 62px;
+  border-radius: 14px;
+}
+[data-mobile="true"] .track-row__title {
+  font-size: 14.5px;
+}
+[data-mobile="true"] .track-row__artist {
+  font-size: 12px;
+}
+
+/* ── Поиск и плейлисты ─────────────────────────────────────────────── */
+[data-mobile="true"] .search-view__title,
+[data-mobile="true"] .page-head__title {
+  font-size: 25px;
+}
+[data-mobile="true"] .card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* Телефон: размытое свечение обложки на весь экран — как в мобильных плеерах. */
+[data-mobile="true"] .app__glow img {
+  filter: blur(70px) saturate(1.5);
+  opacity: 0.6;
+  transform: scale(1.35);
+}
+[data-mobile="true"] .app__glow-veil {
+  opacity: 0.5;
+}
+[data-mobile="true"] .now__title {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+[data-mobile="true"] .now__timeline {
+  font-size: 12px;
+}
+
+/* ═══ Волнообразный ползунок прогресса ═════════════════════════════════
+   Волна — только в прослушанной части, дальше тонкая линия. Волна бежит
+   вправо, поэтому кажется, что дорожка «течёт» вместе с музыкой. */
+
+.waveslider {
+  position: relative;
+  flex: 1;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  overflow: hidden;
+}
+.waveslider__rest {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--surface-4);
+  top: 50%;
+  transform: translateY(-50%);
+}
+.waveslider__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  color: var(--primary);
+  overflow: hidden;
+  pointer-events: none;
+}
+.waveslider__svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  /* Полосу делаем вдвое шире окна: волна бесконечная, шва не видно. */
+  width: 200%;
+  height: 100%;
+  animation: wave-flow 2.4s linear infinite;
+}
+@keyframes wave-flow {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.waveslider__knob {
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 99px;
+  background: var(--primary);
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.16s var(--ease),
+    height 0.16s var(--ease);
+  pointer-events: none;
+}
+.waveslider:hover .waveslider__knob,
+.waveslider[data-dragging="true"] .waveslider__knob {
+  width: 15px;
+  height: 15px;
+}
+
+/* Шапка без своей заливки: иначе свечение обложки обрывается резкой
+   полосой и верх окна выглядит чужим цветом. */
+.titlebar {
+  background: transparent;
+}
+
+/* ═══ Волна в ползунке: плавная, как на референсе ═══════════════════════
+   Длинная волна вместо частой «пилы», медленное течение и скруглённые
+   концы. Когда трек на паузе, волна замирает, но остаётся на месте. */
+
+.waveslider__svg {
+  animation-duration: 7s;
+  animation-timing-function: linear;
+}
+.waveslider[data-playing="false"] .waveslider__svg {
+  animation-play-state: paused;
+}
+.waveslider__fill {
+  border-radius: 99px;
+}
+.waveslider__knob {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 22%, transparent);
+}
+
+/* Свечение обложки появляется плавно: при входе в «Мою волну» оно
+   вспыхивало сразу, и удар по глазам был именно от этого. */
+.app__glow {
+  animation: glow-in 0.75s var(--ease) both;
+}
+@keyframes glow-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.app__glow img {
+  opacity: 0.55;
+}
+
+/* ═══ Волна: одинаковой формы при любой ширине ═════════════════════════
+   Раньше SVG растягивался по ширине контейнера, поэтому волна то сжималась,
+   то расплющивалась. Теперь это повторяющийся трафарет фиксированного
+   размера: сколько бы места ни было, форма волны одна и та же.
+   Цвет берётся из темы через mask + background-color. */
+
+.waveslider__pattern {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: var(--primary);
+  --wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='22' viewBox='0 0 46 22'%3E%3Cpath d='M1 11 Q 12 4 23 11 T 45 11' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  -webkit-mask-image: var(--wave);
+  mask-image: var(--wave);
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  -webkit-mask-size: 46px 100%;
+  mask-size: 46px 100%;
+  animation: wave-run 3.6s linear infinite;
+}
+@keyframes wave-run {
+  from {
+    -webkit-mask-position: 0 50%;
+    mask-position: 0 50%;
+  }
+  to {
+    -webkit-mask-position: 46px 50%;
+    mask-position: 46px 50%;
+  }
+}
+/* На паузе волна замирает на месте, но остаётся. */
+.waveslider[data-playing="false"] .waveslider__pattern {
+  animation-play-state: paused;
+}
+
+/* Срез волны справа скрываем круглым концом: иначе она выглядит обрубленной. */
+.waveslider__cap {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -1px;
+  border-radius: 99px;
+  background: var(--primary);
+}
+
+/* Старую реализацию через svg больше не используем. */
+.waveslider__svg {
+  display: none;
+}
+
+/* ═══ Ползунок прогресса: плотная полоса с тонким делением ═════════════
+   По референсу пользователя: толстая скруглённая полоса, заливка цветом
+   темы, тонкая вертикальная риска на месте прогресса. Волну убрали. */
+
+.waveslider {
+  height: 26px;
+}
+.waveslider__rest {
+  height: 9px;
+  border-radius: 99px;
+  background: var(--surface-4);
+}
+.waveslider__fill {
+  top: 50%;
+  bottom: auto;
+  height: 9px;
+  transform: translateY(-50%);
+  background: var(--primary);
+  border-radius: 99px;
+  overflow: visible;
+}
+/* Волновой трафарет и круглый кончик больше не нужны. */
+.waveslider__pattern,
+.waveslider__cap {
+  display: none;
+}
+/* Тонкая риска вместо точки: так она читается как разделитель. */
+.waveslider__knob {
+  width: 3px;
+  height: 20px;
+  border-radius: 99px;
+  background: var(--on-surface);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--surface) 55%, transparent);
+}
+.waveslider:hover .waveslider__knob,
+.waveslider[data-dragging="true"] .waveslider__knob {
+  width: 4px;
+  height: 24px;
+}
+
+/* Название альбома на экране плеера — ссылка на весь альбом. */
+.now__album--link {
+  display: block;
+  margin: 6px auto 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--on-surface-faint);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition:
+    color 0.2s var(--ease),
+    text-decoration-color 0.2s var(--ease);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.now__album--link:hover:not(:disabled) {
+  color: var(--on-surface);
+  text-decoration-color: var(--primary);
+}
+.now__album--link:disabled {
+  cursor: default;
+}
+
+/* Свечение: смена обложки проявляется плавно (без вспышки при входе). */
+.app__glow img {
+  animation: glow-in 0.8s var(--ease) both;
+}
+
+/* На телефоне прячем только громкость, а кнопка «Включить волну» нужна. */
+[data-mobile="true"] .now__header-right {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+[data-mobile="true"] .now__volume {
+  display: none;
+}
+[data-mobile="true"] .now__wave-btn {
+  height: 36px;
+  font-size: 12px;
+}

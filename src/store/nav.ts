@@ -9,6 +9,7 @@ export type Route =
   | { name: "likes" }
   | { name: "settings" }
   | { name: "artist"; id: string; title: string }
+  | { name: "album"; id: string; title: string }
   | { name: "playlist"; uid: number; kind: number; title: string };
 
 type NavState = {

@@ -23,6 +23,8 @@ type LibraryState = {
   isLiked: (trackId: string) => boolean;
   createPlaylist: (title: string, isPrivate: boolean) => Promise<Playlist>;
   addToPlaylist: (kind: number, track: Track) => Promise<void>;
+  renamePlaylist: (kind: number, title: string) => Promise<void>;
+  deletePlaylist: (kind: number) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 };
@@ -118,6 +120,19 @@ export const useLibrary = create<LibraryState>()((set, get) => ({
     set({ playlists: [playlist, ...get().playlists], error: null });
     void get().refreshPlaylists();
     return playlist;
+  },
+
+  renamePlaylist: async (kind, title) => {
+    await api.playlistRename(kind, title);
+    set({
+      playlists: get().playlists.map((p) => (p.kind === kind ? { ...p, title } : p)),
+    });
+  },
+
+  deletePlaylist: async (kind) => {
+    await api.playlistDelete(kind);
+    // Убираем из списка сразу, чтобы не ждать повторной загрузки.
+    set({ playlists: get().playlists.filter((p) => p.kind !== kind) });
   },
 
   addToPlaylist: async (kind, track) => {

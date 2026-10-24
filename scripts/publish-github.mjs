@@ -26,6 +26,8 @@ const VERSION = pkg.version;
 
 /** Что не заливаем в репозиторий. */
 const SKIP_DIRS = new Set([
+  // Папка со скриншотами пользователя: они уже разложены в docs/screenshots.
+  "срины",
   "node_modules",
   "dist",
   "target",
@@ -66,17 +68,33 @@ function collect(dir, out = []) {
 }
 
 async function api(path, options = {}, base = API) {
-  const res = await fetch(base + path, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token()}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "User-Agent": "coum-music-publisher",
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...options.headers,
-    },
-  });
+  const request = () =>
+    fetch(base + path, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${token()}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "coum-music-publisher",
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...options.headers,
+      },
+    });
+
+  // Сеть иногда рвётся на середине заливки: повторяем запрос, а не падаем.
+  let res;
+  let lastError;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      res = await request();
+      lastError = null;
+      break;
+    } catch (e) {
+      lastError = e;
+      await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
+    }
+  }
+  if (!res) throw lastError ?? new Error("сеть недоступна");
 
   const text = await res.text();
   let json = null;

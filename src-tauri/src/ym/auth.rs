@@ -57,6 +57,10 @@ pub fn extract_token(url: &str) -> Option<String> {
 
 /// Открывает окно входа Яндекса. При успехе сохраняет токен и шлёт событие
 /// `auth://success` с данными аккаунта.
+///
+/// На телефоне отдельного окна нет: система открывает браузер, а токен
+/// возвращается по ссылке-редиректу. Поэтому размеры и центрирование —
+/// только для десктопа.
 pub fn open_login_window(app: &AppHandle) -> Result<(), String> {
     if let Some(existing) = app.get_webview_window("login") {
         let _ = existing.close();
@@ -65,23 +69,27 @@ pub fn open_login_window(app: &AppHandle) -> Result<(), String> {
     let url = tauri::Url::parse(&oauth_url()).map_err(|e| e.to_string())?;
     let nav_handle = app.clone();
 
-    tauri::WebviewWindowBuilder::new(app, "login", tauri::WebviewUrl::External(url))
-        .title("Вход в Яндекс")
-        .inner_size(560.0, 760.0)
-        .min_inner_size(420.0, 560.0)
-        .center()
-        .on_navigation(move |url| {
-            if let Some(token) = extract_token(url.as_str()) {
-                let handle = nav_handle.clone();
-                tauri::async_runtime::spawn(async move {
-                    finish_login(handle, token).await;
-                });
-                return false;
-            }
-            true
-        })
-        .build()
-        .map_err(|e| e.to_string())?;
+    #[allow(unused_mut)]
+    let mut builder =
+        tauri::WebviewWindowBuilder::new(app, "login", tauri::WebviewUrl::External(url))
+            .title("Вход в Яндекс")
+            .on_navigation(move |url| {
+                if let Some(token) = extract_token(url.as_str()) {
+                    let handle = nav_handle.clone();
+                    tauri::async_runtime::spawn(async move {
+                        finish_login(handle, token).await;
+                    });
+                    return false;
+                }
+                true
+            });
+
+    #[cfg(desktop)]
+    {
+        builder = builder.inner_size(560.0, 760.0).min_inner_size(420.0, 560.0).center();
+    }
+
+    builder.build().map_err(|e| e.to_string())?;
 
     Ok(())
 }
