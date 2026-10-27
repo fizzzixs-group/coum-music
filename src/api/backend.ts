@@ -83,6 +83,20 @@ export const api = {
   /** Переименовать плейлист. */
   playlistRename: (kind: number, title: string) =>
     invoke<void>("playlist_rename", { kind, title }),
+  /** Сделать плейлист приватным или публичным. */
+  playlistSetVisibility: (kind: number, private_: boolean) =>
+    invoke<void>("playlist_set_visibility", { kind, private: private_ }),
+  /** Свой фон: картинка из файла (data-url). */
+  setBackground: (path: string) => invoke<string>("set_background", { path }),
+  /** Сохранённый фон, если он был. */
+  background: () => invoke<string | null>("background"),
+  /** Убрать фон. */
+  clearBackground: () => invoke<void>("clear_background"),
+  /** Уже сохранённая обложка плейлиста, если её ставили. */
+  playlistCover: (kind: number) => invoke<string | null>("playlist_cover", { kind }),
+  /** Своя обложка плейлиста (возвращает data-url). */
+  setPlaylistCover: (kind: number, path: string) =>
+    invoke<string>("set_playlist_cover", { kind, path }),
   /** Удалить плейлист целиком. */
   playlistDelete: (kind: number) => invoke<void>("playlist_delete", { kind }),
   /** Убрать трек из плейлиста. */

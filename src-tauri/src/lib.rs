@@ -49,8 +49,14 @@ pub fn run() {
             commands::create_playlist,
             commands::playlist_add_track,
             commands::playlist_remove_track,
+                        commands::playlist_delete,
             commands::playlist_rename,
-            commands::playlist_delete,
+            commands::playlist_set_visibility,
+            commands::set_playlist_cover,
+            commands::playlist_cover,
+            commands::set_background,
+            commands::background,
+            commands::clear_background,
         ])
         .run(tauri::generate_context!())
         .expect("не удалось запустить Coum Music");

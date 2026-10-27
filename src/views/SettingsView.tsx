@@ -8,12 +8,16 @@ import {
   IconInfo,
   IconLogout,
   IconPalette,
+  IconPlus,
   IconTelegram,
   IconWave,
 } from "@/components/Icons";
 import { EQ_FREQS, EQ_PRESETS, EQ_RANGE, useEqualizer } from "@/store/equalizer";
 import { useLibrary } from "@/store/library";
-import { THEMES, useTheme } from "@/store/theme";
+import { ShapeSettings } from "@/components/ShapeSettings";
+import { ThemeEditor } from "@/components/ThemeEditor";
+import { useGlow } from "@/store/glow";
+import { THEMES, useTheme, type CustomTheme } from "@/store/theme";
 import { renderNotes } from "@/lib/markdown";
 
 const TELEGRAM_URL = "https://t.me/coumfun";
@@ -22,6 +26,17 @@ const TELEGRAM_URL = "https://t.me/coumfun";
 export function SettingsView() {
   const theme = useTheme((s) => s.theme);
   const setTheme = useTheme((s) => s.setTheme);
+  const customThemes = useTheme((s) => s.custom);
+
+  // undefined — окно закрыто, null — создаём новую, объект — правим свою.
+  const [editing, setEditing] = useState<CustomTheme | null | undefined>(undefined);
+  const glow = useGlow((s) => s.glow);
+  const setGlow = useGlow((s) => s.setGlow);
+
+
+
+  // Помечаем разделы по заголовкам — разметку переписывать не нужно.
+
   const account = useLibrary((s) => s.account);
   const logout = useLibrary((s) => s.logout);
   const error = useLibrary((s) => s.error);
@@ -88,8 +103,72 @@ export function SettingsView() {
                 <span className="theme-chip__label">{t.label}</span>
               </button>
             ))}
+
+            {/* Свои темы: левый клик — применить, правый — изменить или удалить */}
+            {customThemes.map((t) => (
+              <button
+                key={t.id}
+                className="theme-chip theme-chip--own"
+                data-active={theme === t.id}
+                onClick={() => setTheme(t.id)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setEditing(t);
+                }}
+                title="Правый клик — изменить или удалить"
+                aria-pressed={theme === t.id}
+              >
+                <span
+                  className="theme-chip__swatch"
+                  style={{ background: `linear-gradient(135deg, ${t.primary}, ${t.base})` }}
+                >
+                  {theme === t.id && <IconCheck size={20} className="theme-chip__check" />}
+                </span>
+                <span className="theme-chip__label">{t.name}</span>
+              </button>
+            ))}
+
+            {/* Создать свою тему */}
+            <button
+              className="theme-chip theme-chip--add"
+              onClick={() => setEditing(null)}
+              title="Создать свою тему"
+            >
+              <span className="theme-chip__swatch theme-chip__swatch--add">
+                <IconPlus size={22} />
+              </span>
+              <span className="theme-chip__label">Своя тема</span>
+            </button>
+          </div>
+
+          <p className="settings__hint" style={{ marginTop: 10 }}>
+            Своих тем можно создать сколько угодно. Правый клик по своей теме — переименовать,
+            перекрасить или удалить.
+          </p>
+        </section>
+
+        <section className="settings__section">
+          <h2 className="settings__section-title">
+            <IconPalette size={18} /> Подсветка
+          </h2>
+          <div className="settings__row">
+            <div className="settings__row-text">
+              <div className="settings__row-title">Подсветка под обложку</div>
+              <div className="settings__row-sub">
+                Фон за обложкой окрашивается в её цвета. Если мешает — выключи.
+              </div>
+            </div>
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={glow}
+                onChange={(e) => setGlow(e.target.checked)}
+              />
+            </label>
           </div>
         </section>
+
+        <ShapeSettings />
 
         <section className="settings__section">
           <h2 className="settings__section-title">
@@ -303,6 +382,10 @@ export function SettingsView() {
           </div>
         </section>
       </div>
+
+      {editing !== undefined && (
+        <ThemeEditor editing={editing} onClose={() => setEditing(undefined)} />
+      )}
     </div>
   );
 }

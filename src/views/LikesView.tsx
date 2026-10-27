@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 import { Cover } from "@/components/Cover";
 import { IconPlay } from "@/components/Icons";
 import { TrackList } from "@/components/TrackList";
@@ -7,7 +9,15 @@ import { usePlayer } from "@/store/player";
 
 /** Раздел «Мне нравится» — фактически плейлист, но живёт в API отдельно. */
 export function LikesView() {
-  const tracks = useLibrary((s) => s.likedTracks);
+  const storeTracks = useLibrary((s) => s.likedTracks);
+
+  // Снимок списка: убираешь лайк — трек остаётся на месте, пока не уйдёшь
+  // с вкладки. Иначе он исчезает мгновенно и его не вернуть.
+  const [frozen, setFrozen] = useState<typeof storeTracks | null>(null);
+  useEffect(() => {
+    if (!frozen && storeTracks.length > 0) setFrozen(storeTracks);
+  }, [storeTracks, frozen]);
+  const tracks = frozen ?? storeTracks;
   const loading = useLibrary((s) => s.loadingLiked);
   const loadLiked = useLibrary((s) => s.loadLiked);
   const playTracks = usePlayer((s) => s.playTracks);

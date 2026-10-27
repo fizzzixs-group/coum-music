@@ -36,6 +36,7 @@ export default function App() {
   const closePlaylistPicker = useUi((s) => s.closePlaylistPicker);
   // На телефоне интерфейс другой: навигация внизу, окно без своей шапки.
   const mobile = useIsMobile();
+  // Хэллоуинский декор включается вместе с темой.
 
   // Мягкое уведомление само исчезает — оно не должно мешать слушать.
   useEffect(() => {
@@ -136,6 +137,7 @@ export default function App() {
           <div className="app__glow-veil" />
         </div>
       )}
+
 
       <TitleBar />
 

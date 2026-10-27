@@ -3311,3 +3311,1844 @@
   height: 36px;
   font-size: 12px;
 }
+
+/* ═══ Хэллоуин ═════════════════════════════════════════════════════════
+   Слой декора поверх интерфейса: мыши, тыквы, луна, паутина. Клики не
+   ловит, поэтому приложению не мешает. */
+
+.hw {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Луна в углу с тёплым ореолом */
+.hw__moon {
+  position: absolute;
+  top: 5%;
+  right: 7%;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 32%, #ffe6b8, #ff9a3c 72%, #d2691e);
+  box-shadow:
+    0 0 70px 18px rgba(255, 140, 40, 0.22),
+    0 0 160px 60px rgba(255, 90, 0, 0.12);
+  opacity: 0.55;
+}
+
+/* Паутина в верхних углах */
+.hw__cobweb {
+  position: absolute;
+  top: 0;
+  width: 132px;
+  height: 132px;
+  fill: none;
+  stroke: rgba(255, 235, 220, 0.16);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+}
+.hw__cobweb--left {
+  left: 0;
+}
+.hw__cobweb--right {
+  right: 0;
+}
+
+/* Мыши: летят справа налево, чуть покачиваясь */
+.hw__bat {
+  position: absolute;
+  left: -60px;
+  line-height: 1;
+  opacity: 0;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.55));
+  animation-name: bat-fly;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+@keyframes bat-fly {
+  0% {
+    transform: translateX(-60px) translateY(0) rotate(-8deg) scale(1);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.85;
+  }
+  25% {
+    transform: translateX(28vw) translateY(-18px) rotate(6deg) scale(1.05);
+  }
+  50% {
+    transform: translateX(52vw) translateY(8px) rotate(-5deg) scale(0.95);
+  }
+  75% {
+    transform: translateX(78vw) translateY(-12px) rotate(7deg) scale(1.02);
+  }
+  94% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateX(108vw) translateY(4px) rotate(-6deg) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Тыквы на нижнем крае, слегка покачиваются */
+.hw__pumpkins {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 76px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(255, 90, 0, 0.25));
+}
+.hw__pumpkins span {
+  line-height: 1;
+  animation: pumpkin-sway 3.6s var(--ease) infinite;
+}
+.hw__pumpkins span:nth-child(2),
+.hw__pumpkins span:nth-child(4) {
+  animation-delay: 0.5s;
+}
+.hw__pumpkins span:nth-child(3) {
+  animation-delay: 1s;
+}
+@keyframes pumpkin-sway {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(2deg);
+  }
+}
+
+/* Тёплая подсветка снизу — как отсвет от тыкв */
+.hw::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 200px;
+  background: radial-gradient(60% 100% at 50% 100%, rgba(255, 110, 20, 0.16), transparent 70%);
+}
+
+/* В этой теме свечение обложки становится оранжевым */
+[data-theme="halloween"] .app__glow img {
+  filter: blur(70px) saturate(1.6) hue-rotate(-18deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw__bat,
+  .hw__pumpkins span {
+    animation: none;
+  }
+}
+
+/* ── Хэллоуин: рисунки вместо эмодзи ─────────────────────────────────── */
+
+.hw__candy {
+  position: absolute;
+  top: 0;
+  transform-origin: top center;
+  animation-name: candy-swing;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+.hw__candy-string {
+  width: 1.5px;
+  margin: 0 auto;
+  background: linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.08));
+}
+.hw__candy-body {
+  display: block;
+  width: 30px;
+  height: 22px;
+  margin: -2px auto 0;
+  filter: drop-shadow(0 4px 10px rgba(255, 120, 20, 0.35));
+}
+@keyframes candy-swing {
+  from {
+    transform: rotate(-8deg);
+  }
+  to {
+    transform: rotate(8deg);
+  }
+}
+
+.hw__tree {
+  position: absolute;
+  right: 16px;
+  bottom: 58px;
+  width: 150px;
+  height: 250px;
+  opacity: 0.8;
+  pointer-events: none;
+}
+.hw__drop {
+  animation: drop-fall 2.9s linear infinite;
+  transform-box: fill-box;
+}
+.hw__drop--2 {
+  animation-delay: 0.9s;
+}
+.hw__drop--3 {
+  animation-delay: 1.7s;
+}
+@keyframes drop-fall {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(52px);
+    opacity: 0;
+  }
+}
+
+.hw__pumpkin {
+  display: block;
+  animation: pumpkin-sway 3.6s var(--ease) infinite;
+  transform-origin: bottom center;
+  filter: drop-shadow(0 6px 16px rgba(255, 90, 0, 0.3));
+}
+
+/* Мышь — это уже svg, размеры задаются инлайном */
+.hw__bat {
+  height: auto;
+  left: -70px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw__candy,
+  .hw__drop {
+    animation: none;
+  }
+}
+
+/* ── Хэллоуин: мыши сверху, тыквы и дерево снизу (только «Моя волна») ── */
+
+/* конфеты и луну убрали — в наброске их не было */
+.hw__candy,
+.hw__moon,
+.hw__cobweb {
+  display: none;
+}
+
+/* Мыши держатся в верхней полосе окна */
+.hw__bat {
+  position: absolute;
+  left: -70px;
+  pointer-events: none;
+  animation-name: bat-fly;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  opacity: 0;
+  will-change: transform;
+}
+
+/* Тыквы — внизу слева, как на наброске */
+.hw__pumpkins {
+  position: absolute;
+  left: 14px;
+  bottom: 84px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  filter: drop-shadow(0 8px 20px rgba(255, 90, 0, 0.3));
+}
+
+/* Дерево — внизу справа */
+.hw__tree {
+  position: absolute;
+  right: 10px;
+  bottom: 56px;
+  width: 168px;
+  height: 280px;
+  opacity: 0.85;
+}
+
+/* ═══ Свои темы ════════════════════════════════════════════════════════ */
+
+.theme-chip--add .theme-chip__swatch--add {
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 2px dashed var(--outline);
+  color: var(--on-surface-variant);
+  box-shadow: none;
+}
+.theme-chip--add:hover .theme-chip__swatch--add {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.theme-chip--own .theme-chip__swatch::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 99px;
+  background: var(--on-surface);
+  opacity: .55;
+}
+.theme-chip { position: relative; }
+
+/* ── Редактор темы ──────────────────────────────────────────────────── */
+.te {
+  width: min(560px, calc(100vw - 48px));
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+/* Мини-предпросмотр «Моей волны» */
+.te-prev {
+  margin-top: 16px;
+  border-radius: 20px;
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid color-mix(in oklab, var(--outline) 60%, transparent);
+  transition: background .3s, color .3s;
+}
+.te-prev__badge {
+  align-self: flex-start;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 99px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  display: inline-flex;
+  align-items: center;
+}
+.te-prev__cover {
+  width: 92px;
+  height: 92px;
+  border-radius: 16px;
+  margin-top: 6px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .35);
+}
+.te-prev__title {
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.te-prev__artist {
+  font-size: 11px;
+  margin-top: 2px;
+  opacity: .75;
+}
+.te-prev__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 40px;
+  margin-top: 12px;
+}
+.te-prev__bars i {
+  width: 7px;
+  border-radius: 4px;
+  display: block;
+}
+.te-prev__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 12px;
+}
+.te-prev__play {
+  width: 38px;
+  height: 38px;
+  border-radius: 99px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  flex: 0 0 auto;
+}
+.te-prev__line {
+  flex: 1;
+  height: 5px;
+  border-radius: 99px;
+  position: relative;
+  overflow: hidden;
+}
+.te-prev__line span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 99px;
+}
+
+/* Выбор двух цветов */
+.te-colors {
+  display: flex;
+  gap: 22px;
+  margin-top: 18px;
+}
+.te-color {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.te-color__label {
+  font-size: 11.5px;
+  color: var(--on-surface-variant);
+}
+.te-color__swatch {
+  width: 54px;
+  height: 54px;
+  border-radius: 99px;
+  border: 2px solid var(--outline);
+  cursor: pointer;
+  position: relative;
+  transition: transform .2s var(--ease), border-color .2s;
+}
+.te-color__swatch:hover {
+  transform: scale(1.06);
+}
+.te-color__swatch[data-active="true"] {
+  border-color: var(--primary);
+  transform: scale(1.06);
+}
+.te-color__dot {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: #fff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .35);
+}
+.te-color__hex {
+  font-size: 10.5px;
+  color: var(--on-surface-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Палитра оттенков */
+.te-palette {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+.te-palette__grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+.te-palette__dot {
+  aspect-ratio: 1;
+  border-radius: 99px;
+  border: 0;
+  cursor: pointer;
+  transition: transform .15s var(--ease);
+}
+.te-palette__dot:hover {
+  transform: scale(1.15);
+}
+.te-palette__custom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.te-palette__hint {
+  font-size: 12px;
+  color: var(--on-surface-faint);
+}
+
+.te-delete {
+  margin-top: 16px;
+  width: 100%;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--error, #ff6b6b) 45%, transparent);
+  background: transparent;
+  color: var(--error, #ff6b6b);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.te-delete:hover {
+  background: color-mix(in oklab, var(--error, #ff6b6b) 12%, transparent);
+}
+
+/* ═══ Пикер цвета (как в Paint) ════════════════════════════════════════ */
+
+.te-picker {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+.cp__top {
+  display: flex;
+  gap: 12px;
+  height: 168px;
+}
+
+.cp__square {
+  position: relative;
+  flex: 1;
+  border-radius: 10px;
+  cursor: crosshair;
+  touch-action: none;
+  overflow: hidden;
+}
+
+.cp__dot {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 99px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .5);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.cp__hue {
+  position: relative;
+  width: 18px;
+  border-radius: 9px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.cp__hue-mark {
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  height: 6px;
+  border-radius: 99px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .45);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.cp__preview {
+  width: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--outline);
+}
+
+.cp__hex {
+  margin-top: 12px;
+}
+
+.cp__hex .modal__input {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .06em;
+}
+
+.cp__presets {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.cp__preset {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 0;
+  cursor: pointer;
+  transition: transform .12s var(--ease);
+}
+
+.cp__preset:hover {
+  transform: scale(1.15);
+}
+
+.cp__preset[data-same="true"] {
+  box-shadow: 0 0 0 2px var(--on-surface);
+}
+
+/* ═══ Окно своей темы: горизонтальное и поверх плеера ══════════════════ */
+
+/* Плеер и панель рисовались поверх окна — поднимаем модалки выше. */
+.modal {
+  z-index: 300;
+}
+
+.te {
+  width: min(900px, calc(100vw - 36px));
+  max-height: calc(100vh - 96px);
+  padding: 24px 26px;
+  overflow: visible;
+}
+
+.te-body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 22px;
+  margin-top: 14px;
+  align-items: start;
+}
+
+.te-left {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* предпросмотр компактнее */
+.te-prev {
+  margin-top: 0;
+  padding: 12px 14px 14px;
+  border-radius: 18px;
+}
+.te-prev__cover {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  margin-top: 4px;
+}
+.te-prev__title {
+  font-size: 14px;
+  margin-top: 8px;
+}
+.te-prev__artist {
+  font-size: 10.5px;
+  margin-top: 2px;
+}
+.te-prev__bars {
+  height: 32px;
+  gap: 4px;
+  margin-top: 10px;
+}
+.te-prev__bars i {
+  width: 6px;
+}
+.te-prev__row {
+  margin-top: 10px;
+  gap: 10px;
+}
+.te-prev__play {
+  width: 32px;
+  height: 32px;
+  font-size: 10px;
+}
+
+.te-colors {
+  display: flex;
+  gap: 14px;
+  margin-top: 0;
+}
+.te-color {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: var(--surface-2);
+  cursor: pointer;
+  font-family: inherit;
+}
+.te-color[data-active="true"] {
+  border-color: var(--primary);
+}
+.te-color__swatch {
+  width: 38px;
+  height: 38px;
+  border-radius: 99px;
+  border: 2px solid color-mix(in oklab, var(--on-surface) 22%, transparent);
+}
+.te-color__label {
+  font-size: 11px;
+  color: var(--on-surface-variant);
+}
+.te-color__hex {
+  font-size: 9.5px;
+  color: var(--on-surface-faint);
+}
+
+.te-right {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* пикер ниже и шире, чтобы окно не росло вверх */
+.cp__top {
+  height: 150px;
+}
+.cp__presets {
+  grid-template-columns: repeat(12, 1fr);
+  gap: 5px;
+}
+
+.te-save {
+  display: flex;
+  gap: 10px;
+}
+.te-save .modal__input {
+  flex: 1;
+}
+.te-delete {
+  margin-top: 0;
+}
+
+/* На узком окне — в одну колонку, но с прокруткой */
+@media (max-width: 760px) {
+  .te-body {
+    grid-template-columns: 1fr;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+  .te {
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+  }
+}
+
+/* ═══ Меню: появление и закрытие с анимацией ═══════════════════════════ */
+.menu {
+  animation: menu-in 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.menu--closing {
+  animation: menu-out 0.14s cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes menu-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+}
+
+/* ═══ Полоса прокрутки без стрелок ═════════════════════════════════════
+   Кнопки-треугольники сверху и снизу — наследие старых тем Windows,
+   в приложении они выглядят чужеродно. Оставляем только саму полоску. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--on-surface) 18%, transparent);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--on-surface) 32%, transparent);
+  background-clip: content-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Меню не должно выходить за окно ни при какой ширине. */
+.menu {
+  max-width: calc(100vw - 28px);
+}
+
+/* Меню: постоянная ширина, чтобы позиция считалась точно, и предел высоты. */
+.menu {
+  width: 300px;
+  max-height: calc(100vh - 28px);
+  overflow-y: auto;
+}
+
+/* ═══ Формы элементов (Material You) ═══════════════════════════════════
+   Форму задаёт замыкающий блок clip-path из переменных --shape-*,
+   которые выставляет «Форма» в настройках. */
+
+.round-btn,
+.now__play,
+.player__control--play {
+  clip-path: var(--shape-buttons, none);
+}
+
+.now__cover,
+.page-head__cover {
+  clip-path: var(--shape-cover, none);
+}
+
+.card__cover--round,
+.page-head__cover--round,
+.artist-avatar {
+  clip-path: var(--shape-artist, none);
+}
+
+.card__cover:not(.card__cover--round) {
+  clip-path: var(--shape-album, none);
+}
+
+/* ── Блок настроек «Форма элементов» ────────────────────────────────── */
+.shape-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: 0;
+  color: var(--on-surface);
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 0;
+}
+.shape-head__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.shape-head__badge {
+  font-size: 10.5px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: color-mix(in oklab, var(--primary) 24%, transparent);
+  color: var(--primary);
+}
+.shape-head__arrow {
+  transition: transform .2s var(--ease);
+  color: var(--on-surface-variant);
+}
+.shape-head__arrow[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+.shape-body {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.shape-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+.shape-preview__stage {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.shape-preview__play {
+  width: 52px;
+  height: 52px;
+  background: var(--primary);
+  color: var(--on-primary);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+.shape-preview__cover {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(140deg, var(--primary), var(--primary-container));
+}
+.shape-preview__avatar {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(140deg, var(--primary-container), var(--surface-4));
+}
+.shape-preview__caption {
+  font-size: 12px;
+  color: var(--on-surface-faint);
+}
+
+.shape-presets {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.shape-preset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: var(--surface-2);
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--on-surface-variant);
+  font-size: 11.5px;
+}
+.shape-preset[data-active="true"] {
+  border-color: var(--primary);
+  color: var(--on-surface);
+}
+.shape-preset__shape {
+  width: 40px;
+  height: 40px;
+  background: var(--primary);
+  display: block;
+}
+
+.shape-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.shape-slider__head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--on-surface-variant);
+}
+.shape-slider__head b {
+  color: var(--on-surface);
+  font-weight: 600;
+}
+.shape-slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+
+.shape-targets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+.shape-target {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.shape-target input {
+  margin-top: 3px;
+  accent-color: var(--primary);
+}
+.shape-target b {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--on-surface);
+}
+.shape-target em {
+  display: block;
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--on-surface-faint);
+  margin-top: 2px;
+}
+
+.shape-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ═══ Формы: у каждого элемента своя переменная ════════════════════════ */
+
+/* Сначала снимаем старую групповую форму. */
+.round-btn,
+.now__play,
+.player__control--play {
+  clip-path: none;
+}
+
+/* Теперь каждый элемент — по своей настройке. */
+[aria-label="Предыдущий"] {
+  clip-path: var(--shape-back, none);
+}
+[aria-label="Следующий"] {
+  clip-path: var(--shape-next, none);
+}
+.round-btn--play,
+[aria-label="Пауза"],
+[aria-label="Играть"] {
+  clip-path: var(--shape-play, none);
+}
+.now__cover,
+.page-head__cover:not(.page-head__cover--round) {
+  clip-path: var(--shape-cover, none);
+}
+.card__cover--round,
+.page-head__cover--round {
+  clip-path: var(--shape-artist, none);
+}
+.card__cover:not(.card__cover--round) {
+  clip-path: var(--shape-album, none);
+}
+
+/* ── Галочки в стиле приложения ─────────────────────────────────────── */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  border: 2px solid color-mix(in oklab, var(--on-surface) 30%, transparent);
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background .15s var(--ease), border-color .15s var(--ease);
+  margin: 0;
+}
+input[type="checkbox"]:hover {
+  border-color: var(--primary);
+}
+input[type="checkbox"]:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+input[type="checkbox"]:checked::after {
+  content: "";
+  width: 10px;
+  height: 6px;
+  border-left: 2.5px solid var(--on-primary);
+  border-bottom: 2.5px solid var(--on-primary);
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+
+/* ── Выбор элемента ─────────────────────────────────────────────────── */
+.shape-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.shape-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--on-surface) 14%, transparent);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all .15s var(--ease);
+}
+.shape-tab:hover {
+  border-color: var(--primary);
+}
+.shape-tab[data-active="true"] {
+  background: color-mix(in oklab, var(--primary) 18%, transparent);
+  border-color: var(--primary);
+  color: var(--on-surface);
+}
+.shape-tab__dot {
+  width: 16px;
+  height: 16px;
+  display: block;
+  border-radius: 99px;
+  background: var(--primary);
+  opacity: .45;
+}
+.shape-tab[data-on="true"] .shape-tab__dot {
+  opacity: 1;
+  border-radius: 0;
+}
+
+/* ── Тумблер «применять к элементу» ─────────────────────────────────── */
+.shape-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--on-surface);
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+/* ── Предпросмотр ───────────────────────────────────────────────────── */
+.shape-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+.shape-preview__box {
+  width: 68px;
+  height: 68px;
+  background: linear-gradient(140deg, var(--primary), var(--primary-container));
+  flex: 0 0 auto;
+}
+.shape-preview__box[data-kind="play"] {
+  background: var(--primary);
+}
+.shape-preview__box[data-kind="artist"] {
+  border-radius: 0;
+}
+.shape-preview__caption {
+  font-size: 12.5px;
+  color: var(--on-surface-variant);
+}
+
+/* ── Ползунки в стиле приложения ────────────────────────────────────── */
+.shape-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shape-slider__head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--on-surface-variant);
+}
+.shape-slider__head b {
+  color: var(--on-surface);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.shape-slider__body {
+  position: relative;
+  height: 22px;
+  display: flex;
+  align-items: center;
+}
+.shape-slider__track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--surface-4);
+  overflow: hidden;
+}
+.shape-slider__track i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 99px;
+  background: var(--primary);
+}
+.shape-slider__knob {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 99px;
+  background: var(--primary);
+  border: 2px solid var(--surface);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+}
+.shape-slider__body input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* ═══ Живые кнопки и переходы в настройках ════════════════════════════ */
+
+/* Кнопки мягко увеличиваются при наведении (можно отключить в настройках). */
+[data-hover="on"] .round-btn,
+[data-hover="on"] .btn-primary,
+[data-hover="on"] .btn-ghost,
+[data-hover="on"] .theme-chip,
+[data-hover="on"] .card {
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease);
+}
+[data-hover="on"] .round-btn:hover,
+[data-hover="on"] .btn-primary:hover,
+[data-hover="on"] .btn-ghost:hover {
+  transform: scale(1.05);
+}
+[data-hover="on"] .round-btn:active,
+[data-hover="on"] .btn-primary:active {
+  transform: scale(.97);
+}
+[data-hover="on"] .theme-chip:hover {
+  transform: translateY(-2px);
+}
+[data-hover="on"] .card:hover {
+  transform: translateY(-3px);
+}
+
+/* Переход между вкладками «формы»: панель ниже проявляется заново. */
+.shape-body {
+  animation: shape-panel-in .28s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes shape-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Выбранная вкладка элемента подсвечивается плавно */
+.shape-tab {
+  transition: background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease),
+    transform .15s var(--ease);
+}
+.shape-tab:hover {
+  transform: translateY(-1px);
+}
+
+/* Раскрытие блока формы */
+.shape-body > * {
+  animation: shape-row-in .3s cubic-bezier(.16,1,.3,1) both;
+}
+.shape-body > *:nth-child(2) { animation-delay: .03s; }
+.shape-body > *:nth-child(3) { animation-delay: .06s; }
+.shape-body > *:nth-child(4) { animation-delay: .09s; }
+.shape-body > *:nth-child(5) { animation-delay: .12s; }
+@keyframes shape-row-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ═══ Режим редактирования раскладки ═══════════════════════════════════ */
+
+.le {
+  position: fixed;
+  inset: 0;
+  z-index: 310;
+  pointer-events: none;
+}
+
+/* Центральные направляющие */
+.le__guide {
+  position: absolute;
+  background: color-mix(in oklab, var(--primary) 85%, white);
+  opacity: .55;
+}
+.le__guide--v {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+.le__guide--h {
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+/* Рамка вокруг выбранного элемента */
+.le__zone {
+  position: fixed;
+  pointer-events: auto;
+  cursor: grab;
+  border: 1.5px dashed color-mix(in oklab, var(--primary) 90%, transparent);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--primary) 6%, transparent);
+}
+.le__zone:active {
+  cursor: grabbing;
+}
+.le__zone[data-hidden="true"] {
+  opacity: .4;
+}
+.le__zone-label {
+  position: absolute;
+  left: 0;
+  top: -24px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--primary);
+  color: var(--on-primary);
+  white-space: nowrap;
+}
+.le__handle {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 99px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(0, 0, 0, .3);
+  background: var(--surface);
+  color: var(--on-surface);
+  font-size: 12px;
+  cursor: pointer;
+}
+.le__handle--del {
+  right: -12px;
+  top: -12px;
+}
+.le__handle--size {
+  right: -12px;
+  bottom: -12px;
+  background: var(--primary);
+  border-color: transparent;
+  cursor: nwse-resize;
+}
+
+/* Панель инструментов */
+.le__toolbar {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  background: color-mix(in oklab, var(--surface) 92%, black);
+  border: 1px solid color-mix(in oklab, var(--on-surface) 14%, transparent);
+  border-radius: 18px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+  max-width: min(920px, calc(100vw - 32px));
+}
+.le__row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.le__chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--on-surface) 16%, transparent);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.le__chip[data-active="true"] {
+  border-color: var(--primary);
+  color: var(--on-surface);
+  background: color-mix(in oklab, var(--primary) 16%, transparent);
+}
+.le__buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Модалка подтверждения внутри редактора — поверх зон захвата. */
+.le__modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, .55);
+  backdrop-filter: blur(6px);
+}
+.le__zone {
+  position: fixed;
+}
+.le__zone[data-active="true"] {
+  border-color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+}
+
+
+/* ═══ Тумблеры вместо галочек ══════════════════════════════════════════
+   Все чекбоксы в приложении выглядят как переключатели с анимацией. */
+
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 46px;
+  height: 26px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 99px;
+  background: var(--surface-4);
+  position: relative;
+  cursor: pointer;
+  margin: 0;
+  transition: background .22s var(--ease);
+}
+input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 99px;
+  background: var(--on-surface-variant);
+  transition:
+    transform .24s cubic-bezier(.2, 1.4, .4, 1),
+    background .22s var(--ease),
+    width .16s var(--ease);
+}
+input[type="checkbox"]:active::before {
+  width: 24px;
+}
+input[type="checkbox"]:checked {
+  background: var(--primary);
+}
+input[type="checkbox"]:checked::before {
+  transform: translateX(20px);
+  background: var(--on-primary);
+}
+input[type="checkbox"]:checked:active::before {
+  transform: translateX(16px);
+}
+/* Старую галочку-«птичку» убираем */
+input[type="checkbox"]::after {
+  content: none;
+}
+input[type="checkbox"]:checked::after {
+  content: none;
+}
+input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Строка «настройка + тумблер» */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Подсветка фона под обложку */
+[data-glow="off"] .app__glow {
+  display: none;
+}
+
+/* ═══ Наклон кнопок при наведении ═════════════════════════════════════ */
+
+[data-hover="on"] .round-btn,
+[data-hover="on"] .now__play {
+  transition:
+    transform .22s cubic-bezier(.2, 1.4, .4, 1),
+    background .2s var(--ease);
+}
+[data-hover="on"] .round-btn:hover,
+[data-hover="on"] .now__play:hover {
+  transform: rotate(-24deg) scale(1.08);
+}
+[data-hover="on"] .round-btn:active,
+[data-hover="on"] .now__play:active {
+  transform: rotate(-12deg) scale(.96);
+}
+
+/* ═══ Фон: убираем артефакт, повышаем читаемость, правим ползунки ═════ */
+
+/* Со своим фоном свечение обложки не нужно — оно и висело тёмным пятном. */
+[data-bg="on"] .app__glow {
+  display: none !important;
+}
+
+/* Читаемость поверх картинки: тень у текста и затемнение под списками. */
+[data-bg="on"] .rail,
+[data-bg="on"] .tracklist,
+[data-bg="on"] .settings,
+[data-bg="on"] .search-view {
+  background: color-mix(in oklab, var(--surface) 62%, transparent);
+  backdrop-filter: blur(18px);
+  border-radius: 18px;
+}
+
+[data-bg="on"] .track-row__title,
+[data-bg="on"] .track-row__artist,
+[data-bg="on"] .rail,
+[data-bg="on"] .settings__row-title,
+[data-bg="on"] .settings__hint,
+[data-bg="on"] .page-head__title,
+[data-bg="on"] .card__title,
+[data-bg="on"] .card__sub,
+[data-bg="on"] .search-view__title,
+[data-bg="on"] .now__title,
+[data-bg="on"] .now__artists,
+[data-bg="on"] .now__album {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .75), 0 0 12px rgba(0, 0, 0, .5);
+}
+
+/* ── Ползунки: толстая дорожка и белая риска ─────────────────────────── */
+
+input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 99px;
+  background: color-mix(in oklab, var(--on-surface) 18%, transparent);
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 4px;
+  height: 20px;
+  margin-top: -5px;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
+}
+input[type="range"]::-moz-range-track {
+  height: 10px;
+  border-radius: 99px;
+  background: color-mix(in oklab, var(--on-surface) 18%, transparent);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 4px;
+  height: 20px;
+  border: 0;
+  border-radius: 2px;
+  background: #ffffff;
+}
+
+/* Ползунок размера в формах — тоже риска, а не кружок. */
+.shape-slider__knob {
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  background: #ffffff;
+  border: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
+}
+
+/* ═══ Вкладки настроек ═════════════════════════════════════════════════ */
+
+.settings-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0 18px;
+  flex-wrap: wrap;
+}
+.settings-tab {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--on-surface) 15%, transparent);
+  background: transparent;
+  color: var(--on-surface-variant);
+  font-family: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all .2s var(--ease);
+}
+.settings-tab:hover {
+  border-color: var(--primary);
+}
+.settings-tab[data-active="true"] {
+  background: color-mix(in oklab, var(--primary) 20%, transparent);
+  border-color: var(--primary);
+  color: var(--on-surface);
+}
+
+/* Показываем только разделы выбранной вкладки */
+.settings__section[data-tab] {
+  animation: settings-in .32s cubic-bezier(.16, 1, .3, 1) both;
+}
+.settings__section[data-tab]:nth-of-type(2) {
+  animation-delay: .04s;
+}
+.settings__section[data-tab]:nth-of-type(3) {
+  animation-delay: .08s;
+}
+@keyframes settings-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Форма мини-обложки в списках треков — отдельная настройка. */
+.track-row__cover,
+.track-row .mini-art,
+.track__cover {
+  clip-path: var(--shape-mini, none);
+}
+
+/* Обложки альбомов — только карточки, чтобы не задевать строки треков. */
+.card-grid .card__cover:not(.card__cover--round) {
+  clip-path: var(--shape-album, none);
+}
+.track-row .card__cover,
+.card__cover {
+  clip-path: none;
+}
+
+/* ═══ Формы: точные цели, приоритет важнее общих правил ═══════════════ */
+
+.card-grid .card__cover:not(.card__cover--round) {
+  clip-path: var(--shape-album, none) !important;
+}
+.track-row__cover {
+  clip-path: var(--shape-mini, none) !important;
+}
+.track-row__action,
+.player__control:not(.player__control--play) {
+  clip-path: var(--shape-dots, none) !important;
+}
+
+/* ═══ Формы: финальные правила, перекрывают всё ════════════════════════ */
+
+.card__cover:not(.card__cover--round) {
+  clip-path: var(--shape-album, none) !important;
+}
+.track-row__cover,
+.player__cover {
+  clip-path: var(--shape-mini, none) !important;
+}
+.track-row__action,
+.player__control:not(.player__control--play) {
+  clip-path: var(--shape-dots, none) !important;
+}
+.track-row__like,
+.track-row__action[data-like="true"],
+[aria-label="В избранное"],
+[aria-label="Убрать из избранного"] {
+  clip-path: var(--shape-like, none) !important;
+}
+
+/* Кнопка «Ещё» (три точки) — точный селектор по подписи. */
+.track-row__action[aria-label="Ещё"],
+.track-row__action[aria-label="Меню"],
+.track-row__action:last-of-type {
+  clip-path: var(--shape-dots, none) !important;
+}
+
+/* Лайк в строке — всё остальное в действиях строки. */
+.track-row__action:not([aria-label="Ещё"]):not([aria-label="Меню"]) {
+  clip-path: var(--shape-like, none) !important;
+}
+
+/* ═══ Почему форма кнопок была незаметной ═════════════════════════════
+   У «трёх точек» и лайка прозрачный фон: обрезать нечего, поэтому
+   clip-path ничего не менял. Даём им лёгкую подложку — и форма видна. */
+
+.track-row__action {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklab, var(--on-surface) 9%, transparent);
+  border-radius: 10px;
+  transition: background .18s var(--ease), clip-path .2s var(--ease);
+}
+.track-row__action:hover {
+  background: color-mix(in oklab, var(--on-surface) 16%, transparent);
+}
+
+/* Кнопка «Ещё» в плеере тоже получает подложку, чтобы форма читалась. */
+.player__control:not(.player__control--play) {
+  background: color-mix(in oklab, var(--on-surface) 9%, transparent);
+}
+
+/* Кнопки действий в строке видны всегда — иначе форму просто не увидеть. */
+.track-row__action {
+  opacity: 1;
+}
+
+/* ═══ ИСПРАВЛЕНИЕ: форма «три точки» больше не лезет на другие кнопки ══
+   Правило было слишком широким — оно захватывало «назад», «вперёд» и
+   громкость, потому что все они одного класса. Теперь только по подписи. */
+
+.player__control:not(.player__control--play),
+.round-btn,
+.btn-ghost,
+.btn-primary {
+  clip-path: none !important;
+}
+
+/* Формы — строго по назначению */
+[aria-label="Ещё"],
+.track-row__action[aria-label="Ещё"] {
+  clip-path: var(--shape-dots, none) !important;
+}
+
+[aria-label="Предыдущий"] {
+  clip-path: var(--shape-back, none) !important;
+}
+[aria-label="Следующий"] {
+  clip-path: var(--shape-next, none) !important;
+}
+[aria-label="Пауза"],
+[aria-label="Играть"],
+.round-btn--play {
+  clip-path: var(--shape-play, none) !important;
+}
+
+/* Метка MP3 в плеере не нужна */
+.player__mp3,
+.player__quality,
+.player__badge {
+  display: none !important;
+}
+
+/* ═══ ФИНАЛ: формы только в списках и на «Моей волне» ══════════════════
+   В нижнем плеере форм быть не должно вообще — только обычные кнопки. */
+
+.player,
+.player * {
+  clip-path: none !important;
+}
+.player .track-row__action,
+.player .round-btn,
+.player [aria-label] {
+  clip-path: none !important;
+  background: transparent !important;
+}
+
+/* Лайк в строке трека — своя форма, отдельно от «трёх точек» */
+.track-row .track-row__action:not([aria-label="Ещё"]):not([aria-label="Меню"]) {
+  clip-path: var(--shape-like, none) !important;
+}
+.track-row .track-row__action[aria-label="Ещё"],
+.track-row .track-row__action[aria-label="Меню"] {
+  clip-path: var(--shape-dots, none) !important;
+}
+
+/* ═══ На «Моей волне» лайк и «ещё» — тоже с формами ════════════════════
+   Круглые кнопки я сбрасывал целиком, поэтому лайк на волне терял форму.
+   Возвращаем точечно. */
+
+.round-btn[aria-label="В избранное"],
+.round-btn[aria-label="Убрать из избранного"],
+[aria-label="В избранное"],
+[aria-label="Убрать из избранного"] {
+  clip-path: var(--shape-like, none) !important;
+}
+
+.round-btn[aria-label="Ещё"],
+[aria-label="Ещё"] {
+  clip-path: var(--shape-dots, none) !important;
+}
+
+/* Кнопки «назад / вперёд / пауза» на волне */
+[aria-label="Предыдущий"] {
+  clip-path: var(--shape-back, none) !important;
+}
+[aria-label="Следующий"] {
+  clip-path: var(--shape-next, none) !important;
+}
+[aria-label="Пауза"],
+[aria-label="Играть"] {
+  clip-path: var(--shape-play, none) !important;
+}
+
+/* ═══ ИСПРАВЛЕНИЯ ═══════════════════════════════════════════════════════ */
+
+/* 1. Кружок исполнителя в поиске: правило перебивалось общим сбросом
+   .card__cover { clip-path: none }, который стоял ниже по файлу. */
+.card__cover--round,
+.page-head__cover--round {
+  clip-path: var(--shape-artist, none) !important;
+}
+
+/* 2. Мини-обложка выглядела «квадратом с вырезом»: форму получала сама
+   картинка, а серый квадрат-обёртка оставался за ней. Убираем его. */
+.track-row__lead {
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+
+/* Иконка воспроизведения поверх мини-обложки: аккуратный круг,
+   не наследует форму обложки и не выглядит обрезанной. */
+.track-row__index {
+  clip-path: none !important;
+  border-radius: 0;
+  background: transparent;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.track-row__index > *,
+.track-row__index svg {
+  width: 26px;
+  height: 26px;
+  padding: 5px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  backdrop-filter: blur(6px);
+  box-sizing: content-box;
+}
+
+/* ═══ Мини-обложка в нижнем плеере ═════════════════════════════════════
+   Общий сброс «всё внутри .player без формы» перебивал правило для
+   обложки. Возвращаем точечно, приоритетом выше. */
+
+.player .player__cover,
+.player .player__cover-btn {
+  clip-path: var(--shape-mini, none) !important;
+}
+.player .player__cover-btn {
+  background: transparent !important;
+  border-radius: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: var(--shape-mini, none) !important;
+}
+.player .player__cover {
+  background: transparent;
+}

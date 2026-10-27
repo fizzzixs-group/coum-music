@@ -352,9 +352,12 @@ impl YmClient {
             }
         }
 
+        // API отдаёт «сырой» формат трека, а не готовый DTO: раньше здесь
+        // был разбор сразу в TrackDto, он молча падал и альбом оставался пустым.
         Ok(list
             .iter()
-            .filter_map(|item| serde_json::from_value::<TrackDto>(item.clone()).ok())
+            .filter_map(|item| serde_json::from_value::<RawTrack>(item.clone()).ok())
+            .map(|item| TrackDto::from(&item))
             .collect())
     }
 
@@ -464,6 +467,19 @@ impl YmClient {
                 &format!("/users/{}/playlists/{kind}/rename", self.uid),
                 &[],
                 vec![("value", title.to_string())],
+            )
+            .await?;
+        Ok(())
+    }
+
+    /// Меняет видимость плейлиста (приватный / публичный).
+    pub async fn playlist_set_visibility(&self, kind: i64, private: bool) -> Result<()> {
+        let value = if private { "private" } else { "public" };
+        let _: serde_json::Value = self
+            .post_form(
+                &format!("/users/{}/playlists/{kind}/visibility", self.uid),
+                &[],
+                vec![("value", value.to_string())],
             )
             .await?;
         Ok(())

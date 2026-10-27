@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 
+import { open } from "@tauri-apps/plugin-dialog";
+
 import { api, humanError } from "@/api/backend";
 import type { PlaylistDetail, Track } from "@/api/types";
 import { Cover } from "@/components/Cover";
 import { IconPlay, IconTrash } from "@/components/Icons";
+import { Menu, type MenuEntry } from "@/components/Menu";
 import { TrackList } from "@/components/TrackList";
 import { formatTime, plural, trackCount } from "@/lib/format";
 import { useLibrary } from "@/store/library";
@@ -17,11 +20,42 @@ export function PlaylistView({ route }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [ownCover, setOwnCover] = useState<string | null>(null);
   const playTracks = usePlayer((s) => s.playTracks);
   const setNotice = usePlayer((s) => s.setNotice);
 
-  // Удаляем трек: сначала убираем его из списка, потом сообщаем серверу.
-  // Если сервер откажет — возвращаем список назад и показываем ошибку.
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setData(null);
+
+    (async () => {
+      try {
+        const detail = await api.playlist(route.uid, route.kind);
+        if (!cancelled) setData(detail);
+
+        // Своя обложка хранится локально — читаем её при каждом открытии.
+        try {
+          const saved = await api.playlistCover(route.kind);
+          if (!cancelled && saved) setOwnCover(saved);
+        } catch {
+          // нет сохранённой — покажем серверную
+        }
+      } catch (e) {
+        if (!cancelled) setError(humanError(e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [route.uid, route.kind]);
+
   const removeTrack = async (track: Track) => {
     if (busy || !data) return;
     setBusy(true);
@@ -40,27 +74,40 @@ export function PlaylistView({ route }: Props) {
     }
   };
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setData(null);
+  // ── Меню карандаша ────────────────────────────────────────────────
+  const applyRename = async () => {
+    if (!data || !renaming?.trim()) return;
+    setBusy(true);
+    try {
+      await api.playlistRename(route.kind, renaming.trim());
+      setData({ ...data, playlist: { ...data.playlist, title: renaming.trim() } });
+      setRenaming(null);
+      setNotice("Название изменено");
+      void useLibrary.getState().refreshPlaylists();
+    } catch (e) {
+      setError(humanError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
-    (async () => {
-      try {
-        const detail = await api.playlist(route.uid, route.kind);
-        if (!cancelled) setData(detail);
-      } catch (e) {
-        if (!cancelled) setError(humanError(e));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [route.uid, route.kind]);
+  const pickCover = async () => {
+    try {
+      const picked = await open({
+        multiple: false,
+        filters: [{ name: "Картинка", extensions: ["png", "jpg", "jpeg", "webp", "gif"] }],
+      });
+      if (!picked || Array.isArray(picked)) return;
+      setBusy(true);
+      const url = await api.setPlaylistCover(route.kind, picked);
+      setOwnCover(url);
+      setNotice("Обложка обновлена");
+    } catch (e) {
+      setError(humanError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -85,12 +132,25 @@ export function PlaylistView({ route }: Props) {
   const playable = tracks.filter((t) => t.available);
   const totalMs = tracks.reduce((sum, t) => sum + t.durationMs, 0);
 
+  const entries: MenuEntry[] = [
+    {
+      id: "rename",
+      title: "Переименовать",
+      onSelect: () => setRenaming(playlist.title),
+    },
+    {
+      id: "cover",
+      title: "Сменить обложку",
+      onSelect: () => void pickCover(),
+    },
+  ];
+
   return (
     <div className="view scroll">
       <div className="page-head">
         <Cover
           className="page-head__cover"
-          src={playlist.cover}
+          src={ownCover ?? playlist.cover}
           seed={`${playlist.uid}:${playlist.kind}`}
           alt=""
         />
@@ -106,14 +166,6 @@ export function PlaylistView({ route }: Props) {
                 <span>·</span>
                 <span>
                   {plural(Math.max(1, Math.round(totalMs / 60000)), "минута", "минуты", "минут")}
-                </span>
-              </>
-            )}
-            {playlist.description && (
-              <>
-                <span>·</span>
-                <span className="truncate" style={{ maxWidth: 420 }}>
-                  {playlist.description}
                 </span>
               </>
             )}
@@ -134,6 +186,30 @@ export function PlaylistView({ route }: Props) {
               <IconPlay size={16} />
               Играть
             </button>
+            {playlist.isMine && (
+              <button
+                className="btn-ghost"
+                title="Изменить плейлист"
+                aria-label="Изменить плейлист"
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setMenu({ x: rect.left, y: rect.bottom + 8 });
+                }}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                >
+                  <path d="M4 20h4l10-10a2.8 2.8 0 10-4-4L4 16v4z" />
+                  <path d="M13.5 6.5l4 4" />
+                </svg>
+                Изменить
+              </button>
+            )}
             <span style={{ fontSize: 12, color: "var(--text-mute)" }}>
               {totalMs > 0 && `Общая длина ${formatTime(totalMs)}`}
             </span>
@@ -165,6 +241,37 @@ export function PlaylistView({ route }: Props) {
             : undefined
         }
       />
+
+      {menu && <Menu x={menu.x} y={menu.y} entries={entries} onClose={() => setMenu(null)} />}
+
+      {renaming !== null && (
+        <div className="modal" onPointerDown={(e) => e.target === e.currentTarget && setRenaming(null)}>
+          <div className="modal__card">
+            <button className="modal__close" onClick={() => setRenaming(null)} aria-label="Закрыть">
+              ✕
+            </button>
+            <div className="modal__head">
+              <h2 className="modal__title">Название плейлиста</h2>
+              <div className="modal__sub">{playlist.title}</div>
+            </div>
+            <div className="modal__row">
+              <input
+                className="modal__input"
+                value={renaming}
+                autoFocus
+                maxLength={100}
+                onChange={(e) => setRenaming(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void applyRename();
+                }}
+              />
+              <button className="btn-primary" disabled={busy} onClick={() => void applyRename()}>
+                Сохранить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

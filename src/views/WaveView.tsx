@@ -15,7 +15,7 @@ import {
   IconVolumeLow,
   IconVolumeMute,
 } from "@/components/Icons";
-import { Menu, type MenuEntry } from "@/components/Menu";
+import { canOpenMenu, Menu, type MenuEntry } from "@/components/Menu";
 import { QueuePopover } from "@/components/QueuePopover";
 import { Slider } from "@/components/Slider";
 import { WaveSlider } from "@/components/WaveSlider";
@@ -249,7 +249,8 @@ export function WaveView() {
           aria-label="Ещё"
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
-            setMenu({ x: rect.right, y: rect.bottom + 6 });
+            if (!canOpenMenu()) return;
+          setMenu({ x: rect.right, y: rect.bottom + 6 });
           }}
         >
           <IconMore size={20} />

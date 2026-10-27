@@ -319,6 +319,133 @@ pub async fn playlist_rename(
     client.playlist_rename(kind, &title).await.map_err(err)
 }
 
+/// Делает плейлист приватным или публичным.
+#[tauri::command]
+pub async fn playlist_set_visibility(
+    state: State<'_, AppState>,
+    kind: i64,
+    private: bool,
+) -> Result<(), String> {
+    let client = state.require().await?;
+    client.playlist_set_visibility(kind, private).await.map_err(err)
+}
+
+/// Сохраняет свою обложку плейлиста и отдаёт её как data-url.
+///
+/// Картинка копируется в папку настроек приложения: оригинал у человека
+/// не трогаем, а обложка остаётся и после перезапуска.
+#[tauri::command]
+pub async fn set_playlist_cover(
+    app: AppHandle,
+    kind: i64,
+    path: String,
+) -> Result<String, String> {
+    let src = std::path::PathBuf::from(&path);
+    if !src.is_file() {
+        return Err("Файл не найден".into());
+    }
+
+    let ext = src
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("png")
+        .to_ascii_lowercase();
+    const ALLOWED: [&str; 5] = ["png", "jpg", "jpeg", "webp", "gif"];
+    if !ALLOWED.contains(&ext.as_str()) {
+        return Err("Подойдут png, jpg, webp или gif".into());
+    }
+
+    let dir = crate::stream_proxy::wallpaper_dir(&app)?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let dest = dir.join(format!("cover-{kind}.{ext}"));
+    std::fs::copy(&src, &dest).map_err(|e| format!("Не удалось скопировать файл: {e}"))?;
+
+    let bytes = std::fs::read(&dest).map_err(|e| e.to_string())?;
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
+    Ok(format!(
+        "data:image/{ext};base64,{}",
+        STANDARD.encode(bytes)
+    ))
+}
+
+/// Ставит свой фон из картинки и отдаёт её как data-url.
+#[tauri::command]
+pub async fn set_background(app: AppHandle, path: String) -> Result<String, String> {
+    let src = std::path::PathBuf::from(&path);
+    if !src.is_file() {
+        return Err("Файл не найден".into());
+    }
+
+    let ext = src
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    const ALLOWED: [&str; 6] = ["png", "jpg", "jpeg", "webp", "gif", "avif"];
+    if !ALLOWED.contains(&ext.as_str()) {
+        return Err("Подойдут png, jpg, webp, gif или avif".into());
+    }
+
+    let dir = crate::stream_proxy::wallpaper_dir(&app)?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    for other in ALLOWED {
+        let _ = std::fs::remove_file(dir.join(format!("bg.{other}")));
+    }
+
+    let dest = dir.join(format!("bg.{ext}"));
+    std::fs::copy(&src, &dest).map_err(|e| format!("Не удалось скопировать: {e}"))?;
+
+    let bytes = std::fs::read(&dest).map_err(|e| e.to_string())?;
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
+    Ok(format!("data:image/{ext};base64,{}", STANDARD.encode(bytes)))
+}
+
+/// Отдаёт сохранённый фон, если он есть.
+#[tauri::command]
+pub async fn background(app: AppHandle) -> Result<Option<String>, String> {
+    let dir = crate::stream_proxy::wallpaper_dir(&app)?;
+    for ext in ["png", "jpg", "jpeg", "webp", "gif", "avif"] {
+        let path = dir.join(format!("bg.{ext}"));
+        if path.is_file() {
+            let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
+            use base64::{engine::general_purpose::STANDARD, Engine as _};
+            return Ok(Some(format!(
+                "data:image/{ext};base64,{}",
+                STANDARD.encode(bytes)
+            )));
+        }
+    }
+    Ok(None)
+}
+
+/// Убирает свой фон.
+#[tauri::command]
+pub async fn clear_background(app: AppHandle) -> Result<(), String> {
+    let dir = crate::stream_proxy::wallpaper_dir(&app)?;
+    for ext in ["png", "jpg", "jpeg", "webp", "gif", "avif"] {
+        let _ = std::fs::remove_file(dir.join(format!("bg.{ext}")));
+    }
+    Ok(())
+}
+
+/// Отдаёт сохранённую обложку плейлиста (если её ставили).
+#[tauri::command]
+pub async fn playlist_cover(app: AppHandle, kind: i64) -> Result<Option<String>, String> {
+    let dir = crate::stream_proxy::wallpaper_dir(&app)?;
+    for ext in ["png", "jpg", "jpeg", "webp", "gif"] {
+        let path = dir.join(format!("cover-{kind}.{ext}"));
+        if path.is_file() {
+            let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
+            use base64::{engine::general_purpose::STANDARD, Engine as _};
+            return Ok(Some(format!(
+                "data:image/{ext};base64,{}",
+                STANDARD.encode(bytes)
+            )));
+        }
+    }
+    Ok(None)
+}
+
 /// Удаляет плейлист.
 #[tauri::command]
 pub async fn playlist_delete(state: State<'_, AppState>, kind: i64) -> Result<(), String> {

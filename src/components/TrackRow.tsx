@@ -6,7 +6,7 @@ import { useLibrary } from "@/store/library";
 import { useNav } from "@/store/nav";
 import { Cover } from "./Cover";
 import { IconHeart, IconMore, IconPause, IconPlay } from "./Icons";
-import type { MenuEntry } from "./Menu";
+import { canOpenMenu, type MenuEntry } from "./Menu";
 import { TrackMenu } from "./TrackMenu";
 
 type Props = {
@@ -24,7 +24,10 @@ export function TrackRow({ track, index, isCurrent, isPlaying, onPlay, menuExtra
   const toggleLike = useLibrary((s) => s.toggleLike);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 
-  const openMenu = (x: number, y: number) => setMenu({ x, y });
+  const openMenu = (x: number, y: number) => {
+    if (!canOpenMenu()) return;
+    setMenu({ x, y });
+  };
 
   return (
     <>
@@ -32,7 +35,11 @@ export function TrackRow({ track, index, isCurrent, isPlaying, onPlay, menuExtra
         className="track-row"
         data-current={isCurrent}
         data-unavailable={!track.available}
-        onDoubleClick={onPlay}
+        onDoubleClick={(e) => {
+          // Кнопки внутри строки не должны запускать трек от двойного клика.
+          if ((e.target as HTMLElement).closest("button")) return;
+          onPlay();
+        }}
         onContextMenu={(e) => {
           e.preventDefault();
           openMenu(e.clientX, e.clientY);

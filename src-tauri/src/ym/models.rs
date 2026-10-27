@@ -168,6 +168,11 @@ pub struct RawTrack {
     pub real_id: String,
     #[serde(default)]
     pub title: String,
+    /// Приписка к названию: «Sped Up», «Hardstyle», «Remix» и т.п.
+    /// В Яндекс.Музыке это отдельное поле, поэтому без него треки
+    /// с разными версиями выглядели одинаково.
+    #[serde(default)]
+    pub version: Option<String>,
     #[serde(default)]
     pub available: bool,
     #[serde(default)]
@@ -423,7 +428,17 @@ impl From<&RawTrack> for TrackDto {
         TrackDto {
             id: if t.id.is_empty() { t.real_id.clone() } else { t.id.clone() },
             album_id: album.map(|a| a.id.clone()).unwrap_or_default(),
-            title: if t.title.is_empty() { "Без названия".into() } else { t.title.clone() },
+            title: {
+                let base = if t.title.is_empty() {
+                    "Без названия".to_string()
+                } else {
+                    t.title.clone()
+                };
+                match t.version.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+                    Some(version) => format!("{base} ({version})"),
+                    None => base,
+                }
+            },
             artists,
             artist_list: t
                 .artists

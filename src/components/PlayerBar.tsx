@@ -18,7 +18,7 @@ import {
   IconVolumeMute,
   IconWave,
 } from "./Icons";
-import { Menu, type MenuEntry } from "./Menu";
+import { canOpenMenu, Menu, type MenuEntry } from "./Menu";
 import { Slider } from "./Slider";
 import { WaveSlider } from "./WaveSlider";
 
@@ -84,6 +84,9 @@ export function PlayerBar() {
       // На телефоне это компактная строка над навигацией: тап по ней
       // открывает полноэкранный плеер, как в мобильных приложениях.
       onClick={(e) => {
+        // Переход в «Мою волну» — только по обложке и названию.
+        // Раньше клик по полоске прогресса тоже перебрасывал на волну.
+        if (!(e.target as HTMLElement).closest(".player__now")) return;
         if ((e.target as HTMLElement).closest("button")) return;
         useNav.getState().go({ name: "wave" });
       }}
@@ -177,7 +180,8 @@ export function PlayerBar() {
           disabled={!track}
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
-            setMenu({ x: rect.right, y: rect.top - 8 });
+            if (!canOpenMenu()) return;
+        setMenu({ x: rect.right, y: rect.top - 8 });
           }}
         >
           <IconMore size={18} />

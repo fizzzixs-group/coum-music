@@ -127,6 +127,7 @@
   --base: #2b2b31;
   --on-base: #f0eff5;
 }
+
 [data-theme="light"] {
   --primary: #415f91;
   --on-primary: #ffffff;

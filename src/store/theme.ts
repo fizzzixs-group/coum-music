@@ -1,8 +1,8 @@
-/** Темы оформления: каждая — четыре цвета, остальное выводит CSS. */
+/** Темы оформления: встроенные + свои, собранные из двух цветов. */
 
 import { create } from "zustand";
 
-export type ThemeId =
+export type BuiltinThemeId =
   | "mint"
   | "green"
   | "salad"
@@ -16,12 +16,24 @@ export type ThemeId =
   | "black"
   | "light";
 
+export type CustomThemeId = `custom:${string}`;
+
+export type ThemeId = BuiltinThemeId | CustomThemeId;
+
 export type Theme = {
-  id: ThemeId;
+  id: BuiltinThemeId;
   label: string;
-  /** Акцент темы — из него CSS строит все роли Material 3. */
   primary: string;
-  /** Фон плитки в списке тем (для превью). */
+  base: string;
+};
+
+/** Своя тема: два цвета, из которых выводятся все оттенки. */
+export type CustomTheme = {
+  id: CustomThemeId;
+  name: string;
+  /** Основной цвет: кнопки, ползунки, спектр. */
+  primary: string;
+  /** Фон приложения. */
   base: string;
 };
 
@@ -41,32 +53,162 @@ export const THEMES: Theme[] = [
 ];
 
 const STORAGE_KEY = "coum.theme";
+const CUSTOM_KEY = "coum.customThemes";
 const DEFAULT: ThemeId = "dark";
 
-function isThemeId(value: string | null): value is ThemeId {
-  return !!value && THEMES.some((t) => t.id === value);
+// ── Цвет: разбор и подбор читаемого текста ────────────────────────────
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
-/** Ставит тему на <html> — CSS сам пересчитает все роли. */
-export function applyThemeDom(id: ThemeId): void {
-  document.documentElement.dataset.theme = id;
+export function hexToRgb(hex: string): [number, number, number] {
+  const clean = hex.replace("#", "");
+  const full =
+    clean.length === 3
+      ? clean
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : clean;
+  const num = parseInt(full, 16);
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
 }
 
-export function readStoredTheme(): ThemeId {
+function rgbToHex(r: number, g: number, b: number): string {
+  const to = (v: number) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, "0");
+  return `#${to(r)}${to(g)}${to(b)}`;
+}
+
+/** Относительная яркость (WCAG). */
+function luminance(hex: string): number {
+  const [r, g, b] = hexToRgb(hex).map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** Текст поверх цвета: почти чёрный или белый. */
+export function onColor(hex: string): string {
+  return luminance(hex) > 0.45 ? "#101014" : "#ffffff";
+}
+
+/** Оттенок: сдвигаем яркость к свету (amount > 0) или к тени. */
+export function shade(hex: string, amount: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  if (amount >= 0) {
+    return rgbToHex(r + (255 - r) * amount, g + (255 - g) * amount, b + (255 - b) * amount);
+  }
+  return rgbToHex(r * (1 + amount), g * (1 + amount), b * (1 + amount));
+}
+
+// ── Хранилище своих тем ───────────────────────────────────────────────
+
+export function readCustom(): CustomTheme[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (t): t is CustomTheme =>
+        !!t && typeof t.id === "string" && typeof t.primary === "string" && typeof t.base === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+function saveCustom(list: CustomTheme[]): void {
+  localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
+}
+
+function findById(list: CustomTheme[], id: string): CustomTheme | undefined {
+  return list.find((t) => t.id === id);
+}
+
+// ── Применение к документу ────────────────────────────────────────────
+
+/** Ставит тему на <html>: встроенную — атрибутом, свою — переменными. */
+export function applyThemeDom(id: ThemeId, custom: CustomTheme[] = readCustom()): void {
+  const root = document.documentElement;
+
+  if (id.startsWith("custom:")) {
+    const theme = findById(custom, id);
+    if (!theme) return;
+    root.dataset.theme = "custom";
+    root.style.setProperty("--primary", theme.primary);
+    root.style.setProperty("--on-primary", onColor(theme.primary));
+    root.style.setProperty("--base", theme.base);
+    root.style.setProperty("--on-base", onColor(theme.base));
+    return;
+  }
+
+  // Встроенная тема: убираем свои переменные, дальше решает CSS.
+  root.style.removeProperty("--primary");
+  root.style.removeProperty("--on-primary");
+  root.style.removeProperty("--base");
+  root.style.removeProperty("--on-base");
+  root.dataset.theme = id;
+}
+
+export function readStoredTheme(custom: CustomTheme[] = readCustom()): ThemeId {
   const stored = localStorage.getItem(STORAGE_KEY);
-  return isThemeId(stored) ? stored : DEFAULT;
+  if (!stored) return DEFAULT;
+  if (THEMES.some((t) => t.id === stored)) return stored as BuiltinThemeId;
+  if (stored.startsWith("custom:") && findById(custom, stored)) return stored as CustomThemeId;
+  return DEFAULT;
 }
 
 type ThemeState = {
   theme: ThemeId;
+  custom: CustomTheme[];
   setTheme: (id: ThemeId) => void;
+  saveCustomTheme: (theme: Omit<CustomTheme, "id"> & { id?: CustomThemeId }) => CustomThemeId;
+  removeCustomTheme: (id: CustomThemeId) => void;
 };
 
-export const useTheme = create<ThemeState>()((set) => ({
+export const useTheme = create<ThemeState>()((set, get) => ({
   theme: readStoredTheme(),
+  custom: readCustom(),
+
   setTheme: (id) => {
     localStorage.setItem(STORAGE_KEY, id);
-    applyThemeDom(id);
+    applyThemeDom(id, get().custom);
     set({ theme: id });
+  },
+
+  saveCustomTheme: (theme) => {
+    const list = get().custom;
+    const id = (theme.id ?? `custom:${Date.now().toString(36)}`) as CustomThemeId;
+    const next: CustomTheme = {
+      id,
+      name: theme.name.trim() || "Своя тема",
+      primary: theme.primary,
+      base: theme.base,
+    };
+    const exists = list.some((t) => t.id === id);
+    const merged = exists ? list.map((t) => (t.id === id ? next : t)) : [...list, next];
+    saveCustom(merged);
+
+    // Сразу применяем: человек должен увидеть результат.
+    localStorage.setItem(STORAGE_KEY, id);
+    applyThemeDom(id, merged);
+    set({ custom: merged, theme: id });
+    return id;
+  },
+
+  removeCustomTheme: (id) => {
+    const list = get().custom.filter((t) => t.id !== id);
+    saveCustom(list);
+    // Если удалили активную тему — возвращаемся на тёмную.
+    if (get().theme === id) {
+      localStorage.setItem(STORAGE_KEY, DEFAULT);
+      applyThemeDom(DEFAULT, list);
+      set({ custom: list, theme: DEFAULT });
+    } else {
+      set({ custom: list });
+    }
   },
 }));

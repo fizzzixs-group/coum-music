@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { api } from "@/api/backend";
 import { Cover } from "@/components/Cover";
 import { IconNote, IconPlus, IconRefresh, IconTrash } from "@/components/Icons";
 import { Menu, type MenuEntry } from "@/components/Menu";
@@ -24,6 +25,39 @@ export function PlaylistsView() {
   const [renaming, setRenaming] = useState<{ list: Picked; value: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Если у плейлиста нет своей обложки, показываем обложку первой песни —
+  // карточка не выглядит пустым градиентом.
+  const [covers, setCovers] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    // Своя обложка может быть даже там, где серверная уже есть:
+    // поэтому проверяем все карточки, а не только «пустые».
+    const missing = playlists.slice(0, 12);
+    void Promise.all(
+      missing.map(async (p) => {
+        try {
+          // Сначала своя обложка, потом серверная, потом первая песня.
+          const own = await api.playlistCover(p.kind);
+          if (!cancelled && own) {
+            setCovers((prev) => ({ ...prev, [p.kind]: own }));
+            return;
+          }
+          const detail = await api.playlist(p.uid, p.kind);
+          const cover = detail.tracks.find((t) => t.cover)?.cover;
+          if (!cancelled && cover) {
+            setCovers((prev) => ({ ...prev, [p.kind]: cover }));
+          }
+        } catch {
+          // нет доступа — останется градиент
+        }
+      }),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [playlists]);
 
   const confirmDelete = async (list: Picked) => {
     setBusy(true);
@@ -136,7 +170,7 @@ export function PlaylistsView() {
                   });
                 }}
               >
-                <Cover className="card__cover" src={p.cover} seed={`${p.uid}:${p.kind}`} alt="" />
+                <Cover className="card__cover" src={covers[p.kind] ?? p.cover ?? null} seed={`${p.uid}:${p.kind}`} alt="" />
                 <div className="card__title">{p.title}</div>
                 <div className="card__sub">
                   {p.trackCount > 0 ? trackCount(p.trackCount) : "пустой"}
