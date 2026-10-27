@@ -39,7 +39,14 @@ const SKIP_DIRS = new Set([
   ".vscode",
 ]);
 
-const SKIP_FILES = new Set(["package-lock.json"]);
+const SKIP_FILES = new Set([
+  "package-lock.json",
+  // Промо-страницы — не часть приложения, в репозитории не нужны.
+  "promo-002.html",
+  "promo-app.html",
+  "promo-tiktok.html",
+  "logo.png",
+]);
 
 function token() {
   if (process.env.GITHUB_TOKEN) return process.env.GITHUB_TOKEN.trim();
