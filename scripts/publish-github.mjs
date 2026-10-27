@@ -26,6 +26,8 @@ const VERSION = pkg.version;
 
 /** Что не заливаем в репозиторий. */
 const SKIP_DIRS = new Set([
+  // Документация и скриншоты — не часть приложения.
+  "docs",
   // Папка со скриншотами пользователя: они уже разложены в docs/screenshots.
   "срины",
   "node_modules",

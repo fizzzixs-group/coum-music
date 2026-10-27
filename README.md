@@ -10,8 +10,6 @@
 [![Release](https://img.shields.io/badge/скачать-v0.0.1-B6FF3C?style=for-the-badge)](../../releases/latest)
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D4?style=for-the-badge&logo=windows&logoColor=white)](#установка)
 
-![Моя волна](docs/screenshots/wave.png)
-
 </div>
 
 ---
@@ -36,7 +34,6 @@
 
 | Плейлисты | Мне нравится |
 | :---: | :---: |
-| ![Плейлисты](docs/screenshots/playlists.png) | ![Избранное](docs/screenshots/likes.png) |
 
 </div>
 
